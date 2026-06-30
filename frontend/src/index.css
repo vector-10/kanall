@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  --brand-black: #0D0D0D;
+  --brand-yellow: #FFCD32;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #0D0D0D;
+  color: #F5F5F5;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
