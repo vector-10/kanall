@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/vector-10/the-tenet/internal/model"
-	"github.com/vector-10/the-tenet/internal/repository"
+	"github.com/vector-10/kanall/internal/model"
+	"github.com/vector-10/kanall/internal/repository"
 )
 
 var deliveryBackoff = []time.Duration{

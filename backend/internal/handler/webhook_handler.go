@@ -4,10 +4,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/vector-10/the-tenet/internal/apierror"
-	"github.com/vector-10/the-tenet/internal/middleware"
-	"github.com/vector-10/the-tenet/internal/repository"
-	"github.com/vector-10/the-tenet/internal/service"
+	"github.com/vector-10/kanall/internal/apierror"
+	"github.com/vector-10/kanall/internal/middleware"
+	"github.com/vector-10/kanall/internal/repository"
+	"github.com/vector-10/kanall/internal/service"
 )
 
 type WebhookHandler struct {

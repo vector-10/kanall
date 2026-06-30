@@ -8,9 +8,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/vector-10/the-tenet/internal/apierror"
-	"github.com/vector-10/the-tenet/internal/middleware"
-	"github.com/vector-10/the-tenet/internal/repository"
+	"github.com/vector-10/kanall/internal/apierror"
+	"github.com/vector-10/kanall/internal/middleware"
+	"github.com/vector-10/kanall/internal/repository"
 )
 
 type CustomerHandler struct {

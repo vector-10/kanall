@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/vector-10/the-tenet/internal/apierror"
-	"github.com/vector-10/the-tenet/internal/service"
+	"github.com/vector-10/kanall/internal/apierror"
+	"github.com/vector-10/kanall/internal/service"
 )
 
 type RegistrationHandler struct {

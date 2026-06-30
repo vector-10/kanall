@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/vector-10/the-tenet/internal/apierror"
-	"github.com/vector-10/the-tenet/internal/crypto"
-	"github.com/vector-10/the-tenet/internal/middleware"
-	"github.com/vector-10/the-tenet/internal/service"
+	"github.com/vector-10/kanall/internal/apierror"
+	"github.com/vector-10/kanall/internal/crypto"
+	"github.com/vector-10/kanall/internal/middleware"
+	"github.com/vector-10/kanall/internal/service"
 )
 
 type AuthHandler struct {

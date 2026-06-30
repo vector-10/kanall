@@ -10,10 +10,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
-	"github.com/vector-10/the-tenet/internal/apierror"
-	"github.com/vector-10/the-tenet/internal/middleware"
-	"github.com/vector-10/the-tenet/internal/repository"
-	"github.com/vector-10/the-tenet/internal/service"
+	"github.com/vector-10/kanall/internal/apierror"
+	"github.com/vector-10/kanall/internal/middleware"
+	"github.com/vector-10/kanall/internal/repository"
+	"github.com/vector-10/kanall/internal/service"
 )
 
 type AccountHandler struct {

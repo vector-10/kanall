@@ -5,11 +5,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/vector-10/the-tenet/internal/config"
-	"github.com/vector-10/the-tenet/internal/middleware"
-	"github.com/vector-10/the-tenet/internal/provider"
-	"github.com/vector-10/the-tenet/internal/repository"
-	"github.com/vector-10/the-tenet/internal/service"
+	"github.com/vector-10/kanall/internal/config"
+	"github.com/vector-10/kanall/internal/middleware"
+	"github.com/vector-10/kanall/internal/provider"
+	"github.com/vector-10/kanall/internal/repository"
+	"github.com/vector-10/kanall/internal/service"
 )
 
 func NewRouter(

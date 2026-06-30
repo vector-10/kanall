@@ -46,14 +46,8 @@ func main() {
 		log.Fatalf("failed to ping database: %v", err)
 	}
 
-	var p provider.VirtualAccountProvider
-	if cfg.NombaClientID != "" && cfg.NombaClientSecret != "" {
-		log.Println("using NombaProvider")
-		p = provider.NewNombaProvider(cfg)
-	} else {
-		log.Println("using MockProvider")
-		p = provider.NewMockProvider()
-	}
+	log.Println("using NombaProvider")
+	p := provider.NewNombaProvider(cfg)
 
 	store := repository.NewStore(pool)
 
