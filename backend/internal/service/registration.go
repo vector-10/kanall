@@ -7,10 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/vector-10/kanall/internal/crypto"
+	"github.com/vector-10/kanall/internal/email"
 	"github.com/vector-10/kanall/internal/model"
 	"github.com/vector-10/kanall/internal/repository"
 	"golang.org/x/crypto/bcrypt"
@@ -19,11 +22,12 @@ import (
 var ErrEmailTaken = errors.New("email already registered")
 
 type RegistrationService struct {
-	store *repository.Store
+	store  *repository.Store
+	mailer email.Sender
 }
 
-func NewRegistrationService(store *repository.Store) *RegistrationService {
-	return &RegistrationService{store: store}
+func NewRegistrationService(store *repository.Store, mailer email.Sender) *RegistrationService {
+	return &RegistrationService{store: store, mailer: mailer}
 }
 
 type RegisterInput struct {

@@ -25,6 +25,11 @@ type Config struct {
 	ConvergenceSweepInterval   time.Duration
 	OutboxHTTPTimeout          time.Duration
 	EncryptionKey              string
+	// Email (Brevo)
+	BrevoAPIKey   string
+	BrevoAPIURL   string // defaults to Brevo's transactional endpoint
+	EmailFrom     string
+	EmailFromName string
 }
 
 // the function below is called once at startup, returns config struct or fatal error
@@ -56,6 +61,10 @@ func LoadConfig() (*Config, error) {
 		ConvergenceSweepInterval:   time.Duration(sweepSeconds) * time.Second,
 		OutboxHTTPTimeout:          time.Duration(outboxTimeoutSeconds) * time.Second,
 		EncryptionKey:              os.Getenv("ENCRYPTION_KEY"),
+		BrevoAPIKey:                os.Getenv("BREVO_API_KEY"),
+		BrevoAPIURL:                getEnv("BREVO_API_URL", "https://api.brevo.com/v3/smtp/email"),
+		EmailFrom:                  getEnv("EMAIL_FROM", "noreply@kanall.app"),
+		EmailFromName:              getEnv("EMAIL_FROM_NAME", "Kanall"),
 	}
 
 	if cfg.DatabaseURL == "" {
