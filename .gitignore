@@ -1,0 +1,21 @@
+# Go
+backend/tmp/
+backend/*.exe
+backend/*.test
+backend/*.out
+
+# Env / secrets
+.env
+*.env
+!.env.example
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+CLAUDE.md
