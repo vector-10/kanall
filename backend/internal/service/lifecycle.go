@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/vector-10/kanall/internal/model"
+	"github.com/vector-10/kanall/internal/provider"
 	"github.com/vector-10/kanall/internal/repository"
 )
 
@@ -21,11 +22,12 @@ var validTransitions = map[string]map[string]bool{
 }
 
 type LifecycleService struct {
-	store *repository.Store
+	store    *repository.Store
+	provider provider.VirtualAccountProvider
 }
 
-func NewLifecycleService(store *repository.Store) *LifecycleService {
-	return &LifecycleService{store: store}
+func NewLifecycleService(store *repository.Store, p provider.VirtualAccountProvider) *LifecycleService {
+	return &LifecycleService{store: store, provider: p}
 }
 
 func (s *LifecycleService) Transition(ctx context.Context, tenantID uuid.UUID, accountRef, toStatus string, reason *string) (*model.VirtualAccount, error) {
@@ -39,6 +41,12 @@ func (s *LifecycleService) Transition(ctx context.Context, tenantID uuid.UUID, a
 
 	if !validTransitions[va.Status][toStatus] {
 		return nil, fmt.Errorf("%w: %s → %s", ErrInvalidTransition, va.Status, toStatus)
+	}
+
+	if toStatus == "expired" {
+		if err := s.provider.Expire(ctx, va.AccountRef); err != nil {
+			log.Printf("lifecycle: nomba expire failed for %s: %v", accountRef, err)
+		}
 	}
 
 	if err := s.store.Accounts.UpdateStatus(ctx, tenantID, accountRef, toStatus); err != nil {

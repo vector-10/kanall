@@ -8,6 +8,7 @@ import AccountsPage from './pages/AccountsPage'
 import AccountDetailPage from './pages/AccountDetailPage'
 import StatementPage from './pages/StatementPage'
 import DeadLettersPage from './pages/DeadLettersPage'
+import SettingsPage from './pages/SettingsPage'
 import { api } from './api'
 
 function DashboardLayout({ onLogout }: { onLogout: () => void }) {
@@ -18,22 +19,20 @@ function DashboardLayout({ onLogout }: { onLogout: () => void }) {
   )
 }
 
-// Separated from App so hooks can access the QueryClient provided by main.tsx
 function AppRoutes() {
   const queryClient = useQueryClient()
 
   const { data: me, isLoading } = useQuery({
     queryKey: ['me'],
     queryFn: api.auth.me,
-    retry: false,           // never retry a 401 — it's not a transient error
-    staleTime: 5 * 60_000,  // recheck auth at most every 5 minutes
+    retry: false,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   })
 
   const isAuthed = !!me
 
   const handleAuthSuccess = () => {
-    // Cookie was set by the server. Invalidating ['me'] triggers a re-fetch
-    // which will succeed, flipping isAuthed → true and redirecting via route guard.
     queryClient.invalidateQueries({ queryKey: ['me'] })
   }
 
@@ -41,8 +40,6 @@ function AppRoutes() {
     try {
       await api.auth.logout()
     } finally {
-      // Always clear local cache, even if the network call fails.
-      // Prevents stale data from leaking into the next session.
       queryClient.clear()
     }
   }
@@ -100,6 +97,7 @@ function AppRoutes() {
           <Route path="/accounts/:accountRef" element={<AccountDetailPage />} />
           <Route path="/accounts/:accountRef/statement" element={<StatementPage />} />
           <Route path="/dead-letters" element={<DeadLettersPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/accounts" replace />} />
         </Route>
       ) : (

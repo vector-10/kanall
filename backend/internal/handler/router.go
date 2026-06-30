@@ -5,7 +5,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/vector-10/kanall/internal/apierror"
 	"github.com/vector-10/kanall/internal/config"
+	"github.com/vector-10/kanall/internal/email"
 	"github.com/vector-10/kanall/internal/middleware"
 	"github.com/vector-10/kanall/internal/provider"
 	"github.com/vector-10/kanall/internal/repository"
@@ -16,21 +18,23 @@ func NewRouter(
 	cfg *config.Config,
 	store *repository.Store,
 	p provider.VirtualAccountProvider,
+	mailer email.Sender,
 	health http.HandlerFunc,
 ) http.Handler {
 	reconciliationSvc := service.NewReconciliationService(store, cfg.NombaWebhooksSigningSecret)
 	provisioningSvc   := service.NewProvisioningService(store, p, cfg.EncryptionKey)
-	lifecycleSvc      := service.NewLifecycleService(store)
+	lifecycleSvc      := service.NewLifecycleService(store, p)
 	statementSvc      := service.NewStatementService(store)
-	registrationSvc   := service.NewRegistrationService(store)
+	registrationSvc   := service.NewRegistrationService(store, mailer)
 	authSvc           := service.NewAuthService(store)
+	verificationSvc   := service.NewVerificationService(store)
 
 	webhookH      := &WebhookHandler{reconciliation: reconciliationSvc, store: store}
 	accountH      := &AccountHandler{provisioning: provisioningSvc, lifecycle: lifecycleSvc, store: store}
 	customerH     := &CustomerHandler{store: store}
 	statementH    := &StatementHandler{statement: statementSvc}
-	registrationH := &RegistrationHandler{registration: registrationSvc, auth: authSvc, env: cfg.Env}
-	authH         := &AuthHandler{auth: authSvc, env: cfg.Env}
+	registrationH := &RegistrationHandler{registration: registrationSvc}
+	authH         := &AuthHandler{auth: authSvc, verification: verificationSvc, store: store, env: cfg.Env}
 
 	registerRL     := middleware.NewRateLimiter(5)
 	loginRL        := middleware.NewRateLimiter(10)
@@ -52,13 +56,18 @@ func NewRouter(
 	})
 
 	r.Get("/health", health)
+	r.Get("/webhooks/nomba", func(w http.ResponseWriter, r *http.Request) {
+		apierror.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
 	r.Post("/webhooks/nomba", webhookH.Handle)
 	r.With(registerRL.ByIP).Post("/register", registrationH.Register)
 
 	r.Route("/auth", func(r chi.Router) {
 		r.With(loginRL.ByIP).Post("/login", authH.Login)
 		r.Post("/logout", authH.Logout)
+		r.With(registerRL.ByIP).Post("/verify-email", authH.VerifyEmail)
 		r.With(middleware.TenantAuth(store)).Get("/me", authH.Me)
+		r.With(middleware.TenantAuth(store)).Post("/rotate-key", authH.RotateKey)
 	})
 
 	r.Route("/v1", func(r chi.Router) {

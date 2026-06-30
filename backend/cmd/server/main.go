@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/vector-10/kanall/internal/apierror"
 	"github.com/vector-10/kanall/internal/config"
+	"github.com/vector-10/kanall/internal/email"
 	"github.com/vector-10/kanall/internal/handler"
 	"github.com/vector-10/kanall/internal/provider"
 	"github.com/vector-10/kanall/internal/repository"
@@ -49,6 +50,16 @@ func main() {
 	log.Println("using NombaProvider")
 	p := provider.NewNombaProvider(cfg)
 
+	// Use BrevoSender when BREVO_API_KEY is set; NoopSender logs instead (dev-friendly)
+	var mailer email.Sender
+	if cfg.BrevoAPIKey != "" {
+		log.Println("email: using BrevoSender")
+		mailer = email.NewBrevoSender(cfg.BrevoAPIKey, cfg.BrevoAPIURL, cfg.EmailFrom, cfg.EmailFromName)
+	} else {
+		log.Println("email: no BREVO_API_KEY set, using NoopSender")
+		mailer = email.NewNoopSender()
+	}
+
 	store := repository.NewStore(pool)
 
 	convergenceSvc := service.NewConvergenceService(store, p, cfg.ConvergenceSweepInterval)
@@ -68,7 +79,7 @@ func main() {
 		apierror.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}
 
-	router := handler.NewRouter(cfg, store, p, health)
+	router := handler.NewRouter(cfg, store, p, mailer, health)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

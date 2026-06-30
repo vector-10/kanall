@@ -11,8 +11,6 @@ import (
 
 type RegistrationHandler struct {
 	registration *service.RegistrationService
-	auth         *service.AuthService
-	env          string
 }
 
 type registerRequest struct {
@@ -49,28 +47,15 @@ func (h *RegistrationHandler) Register(w http.ResponseWriter, r *http.Request) {
 			apierror.Respond(w, apierror.Conflict("email already registered"))
 			return
 		}
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 
-	// Auto-login: create session and set cookie so the user lands in the dashboard
-	rawToken, err := h.auth.CreateSession(r.Context(), result.TenantID)
-	if err != nil {
-		// Non-fatal: registration succeeded, but they'll need to log in manually
-		apierror.WriteJSON(w, http.StatusCreated, map[string]string{
-			"tenantId": result.TenantID.String(),
-			"apiKey":   result.APIKey,
-			"warning":  "Store this API key securely — it will not be shown again",
-		})
-		return
+	status := http.StatusCreated
+	if !result.Created {
+		status = http.StatusOK
 	}
-
-	authH := &AuthHandler{auth: h.auth, env: h.env}
-	authH.setSessionCookie(w, rawToken)
-
-	apierror.WriteJSON(w, http.StatusCreated, map[string]string{
+	apierror.WriteJSON(w, status, map[string]string{
 		"tenantId": result.TenantID.String(),
-		"apiKey":   result.APIKey,
-		"warning":  "Store this API key securely — it will not be shown again",
 	})
 }

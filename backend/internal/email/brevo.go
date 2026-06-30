@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
@@ -55,7 +56,8 @@ func (s *BrevoSender) Send(ctx context.Context, msg Message) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("brevo: unexpected status %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("brevo: unexpected status %d: %s", resp.StatusCode, body)
 	}
 	return nil
 }

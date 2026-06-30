@@ -3,18 +3,23 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/vector-10/kanall/internal/apierror"
 	"github.com/vector-10/kanall/internal/crypto"
 	"github.com/vector-10/kanall/internal/middleware"
+	"github.com/vector-10/kanall/internal/repository"
 	"github.com/vector-10/kanall/internal/service"
 )
 
 type AuthHandler struct {
-	auth *service.AuthService
-	env  string
+	auth         *service.AuthService
+	verification *service.VerificationService
+	store        *repository.Store
+	env          string
 }
 
 type loginRequest struct {
@@ -43,7 +48,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			apierror.Respond(w, apierror.Forbidden("account suspended"))
 			return
 		}
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 
@@ -68,12 +73,85 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	apierror.WriteJSON(w, http.StatusOK, map[string]any{
-		"id":        tenant.ID,
-		"name":      tenant.Name,
-		"email":     tenant.Email,
-		"status":    tenant.Status,
-		"createdAt": tenant.CreatedAt,
+		"id":           tenant.ID,
+		"name":         tenant.Name,
+		"email":        tenant.Email,
+		"status":       tenant.Status,
+		"apiKeySuffix": tenant.APIKeySuffix,
+		"createdAt":    tenant.CreatedAt,
 	})
+}
+
+type verifyEmailRequest struct {
+	TenantID string `json:"tenantId"`
+	OTP      string `json:"otp"`
+}
+
+func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	var req verifyEmailRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apierror.Respond(w, apierror.BadRequest("invalid request body"))
+		return
+	}
+	if req.TenantID == "" || req.OTP == "" {
+		apierror.Respond(w, apierror.BadRequest("tenantId and otp are required"))
+		return
+	}
+
+	tenantID, err := uuid.Parse(req.TenantID)
+	if err != nil {
+		apierror.Respond(w, apierror.BadRequest("invalid tenantId"))
+		return
+	}
+
+	result, err := h.verification.VerifyEmail(r.Context(), tenantID, req.OTP)
+	if err != nil {
+		if errors.Is(err, service.ErrInvalidOTP) {
+			apierror.Respond(w, apierror.BadRequest("invalid or expired verification code"))
+			return
+		}
+		if errors.Is(err, service.ErrAlreadyActive) {
+			apierror.Respond(w, apierror.BadRequest("account is already verified"))
+			return
+		}
+		internalError(w, r, err)
+		return
+	}
+
+	rawToken, err := h.auth.CreateSession(r.Context(), tenantID)
+	if err != nil {
+		log.Printf("warn %s %s: session creation failed after OTP verify for tenant %s: %v", r.Method, r.URL.Path, tenantID, err)
+		apierror.WriteJSON(w, http.StatusOK, map[string]string{
+			"apiKey":  result.APIKey,
+			"warning": "session creation failed — please log in manually",
+		})
+		return
+	}
+
+	h.setSessionCookie(w, rawToken)
+	apierror.WriteJSON(w, http.StatusOK, map[string]string{"apiKey": result.APIKey})
+}
+
+func (h *AuthHandler) RotateKey(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenant(r.Context())
+	if tenant == nil {
+		apierror.Respond(w, apierror.Unauthorized())
+		return
+	}
+
+	rawKey, keyHash, err := service.GenerateAPIKey()
+	if err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	suffix := rawKey[len(rawKey)-4:]
+	if err := h.store.Tenants.RotateAPIKey(r.Context(), tenant.ID, keyHash, suffix); err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	apierror.WriteJSON(w, http.StatusOK, map[string]string{"apiKey": rawKey})
 }
 
 func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, rawToken string) {

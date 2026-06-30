@@ -25,12 +25,14 @@ const maxDeliveryAttempts = 5
 type OutboxWorker struct {
 	store      *repository.Store
 	httpClient *http.Client
+	sem        chan struct{}
 }
 
 func NewOutboxWorker(store *repository.Store, httpTimeout time.Duration) *OutboxWorker {
 	return &OutboxWorker{
 		store:      store,
 		httpClient: &http.Client{Timeout: httpTimeout},
+		sem:        make(chan struct{}, 10),
 	}
 }
 
@@ -62,6 +64,13 @@ func (w *OutboxWorker) sweep(ctx context.Context) {
 }
 
 func (w *OutboxWorker) deliver(ctx context.Context, d model.TenantWebhookDelivery) {
+	select {
+	case w.sem <- struct{}{}:
+		defer func() { <-w.sem }()
+	case <-ctx.Done():
+		return
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, d.CallbackURL, bytes.NewReader(d.Payload))
 	if err != nil {
 		w.fail(ctx, d, fmt.Sprintf("build request: %v", err))

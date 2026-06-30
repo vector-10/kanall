@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
@@ -47,6 +48,7 @@ func TenantAuth(store *repository.Store) func(http.Handler) http.Handler {
 					apierror.Respond(w, apierror.Unauthorized())
 					return
 				}
+				log.Printf("auth: DB error on API key lookup: %v", err)
 				apierror.Respond(w, apierror.Internal())
 				return
 			}

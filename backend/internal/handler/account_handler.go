@@ -67,7 +67,7 @@ func (h *AccountHandler) Provision(w http.ResponseWriter, r *http.Request) {
 		ExpectedAmount: req.ExpectedAmount,
 	})
 	if err != nil {
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 
@@ -84,7 +84,7 @@ func (h *AccountHandler) Get(w http.ResponseWriter, r *http.Request) {
 			apierror.Respond(w, apierror.NotFound("account not found"))
 			return
 		}
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *AccountHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	accounts, err := h.store.Accounts.ListByTenant(r.Context(), tenant.ID, limit+1, cursorID)
 	if err != nil {
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 
@@ -152,7 +152,7 @@ func (h *AccountHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.store.Accounts.Update(r.Context(), tenant.ID, accountRef, req.CallbackURL, req.ExpectedAmount); err != nil {
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *AccountHandler) Update(w http.ResponseWriter, r *http.Request) {
 			apierror.Respond(w, apierror.NotFound("account not found"))
 			return
 		}
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 
@@ -198,7 +198,7 @@ func (h *AccountHandler) transition(w http.ResponseWriter, r *http.Request, toSt
 			apierror.Respond(w, apierror.BadRequest(err.Error()))
 			return
 		}
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 

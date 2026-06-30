@@ -1,21 +1,21 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: tenet-postgres
+    container_name: kanall-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: tenet
-      POSTGRES_PASSWORD: tenet
-      POSTGRES_DB: tenet
+      POSTGRES_USER: kanall
+      POSTGRES_PASSWORD: kanall
+      POSTGRES_DB: kanall
     ports:
       - "5432:5432"
     volumes:
-      - tenet_postgres_data:/var/lib/postgresql/data
+      - kanall_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tenet -d tenet"]
+      test: ["CMD-SHELL", "pg_isready -U kanall -d kanall"]
       interval: 5s
       timeout: 5s
       retries: 5
 
 volumes:
-  tenet_postgres_data:
+  kanall_postgres_data:

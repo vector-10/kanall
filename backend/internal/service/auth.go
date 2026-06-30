@@ -49,6 +49,9 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 		return "", ErrInvalidCredentials
 	}
 
+	if tenant.Status == "pending_verification" {
+		return "", ErrInvalidCredentials
+	}
 	if tenant.Status == "suspended" {
 		return "", ErrAccountSuspended
 	}

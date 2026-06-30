@@ -11,6 +11,7 @@ interface Props {
 const NAV = [
   { to: '/accounts', label: 'ACCOUNTS' },
   { to: '/dead-letters', label: 'DEAD LETTERS' },
+  { to: '/settings', label: 'SETTINGS' },
 ]
 
 export default function Layout({ children, onLogout }: Props) {
@@ -74,7 +75,7 @@ export default function Layout({ children, onLogout }: Props) {
                       fontFamily: 'var(--font-mono)',
                       fontSize: 10,
                       letterSpacing: '0.14em',
-                      color: isActive ? '#FFCD32' : '#3A3A3A',
+                      color: isActive ? '#FFCD32' : '#888888',
                     }}
                   >
                     {label}
@@ -105,7 +106,7 @@ export default function Layout({ children, onLogout }: Props) {
                 fontFamily: 'var(--font-mono)',
                 fontSize: 10,
                 letterSpacing: '0.12em',
-                color: '#2A2A2A',
+                color: '#666666',
               }}
             >
               {healthy === undefined ? 'CHECKING' : healthy ? 'API ONLINE' : 'API OFFLINE'}
@@ -120,7 +121,7 @@ export default function Layout({ children, onLogout }: Props) {
                   fontFamily: 'var(--font-mono)',
                   fontSize: 9,
                   letterSpacing: '0.14em',
-                  color: '#2A2A2A',
+                  color: '#666666',
                   marginBottom: 3,
                 }}
               >
@@ -128,7 +129,7 @@ export default function Layout({ children, onLogout }: Props) {
               </div>
               <div
                 className="truncate"
-                style={{ fontSize: 12, color: '#444444', fontFamily: 'var(--font-sans)' }}
+                style={{ fontSize: 12, color: '#C0C0C0', fontFamily: 'var(--font-sans)' }}
                 title={me.name}
               >
                 {me.name}
@@ -143,7 +144,7 @@ export default function Layout({ children, onLogout }: Props) {
               fontFamily: 'var(--font-mono)',
               fontSize: 10,
               letterSpacing: '0.14em',
-              color: '#2A2A2A',
+              color: '#888888',
               background: 'none',
               border: 'none',
               padding: 0,

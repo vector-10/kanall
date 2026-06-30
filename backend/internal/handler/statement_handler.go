@@ -46,7 +46,7 @@ func (h *StatementHandler) Get(w http.ResponseWriter, r *http.Request) {
 			apierror.Respond(w, apierror.NotFound("account not found"))
 			return
 		}
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 

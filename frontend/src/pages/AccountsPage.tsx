@@ -46,7 +46,7 @@ export default function AccountsPage() {
           : undefined,
     })
 
-  const accounts = data?.pages.flatMap(p => p.accounts) ?? []
+  const accounts = data?.pages.flatMap(p => p.accounts ?? []) ?? []
 
   const createMutation = useMutation({
     mutationFn: api.accounts.create,
@@ -89,7 +89,7 @@ export default function AccountsPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: '#333', marginBottom: 5 }}>
+          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: '#666', marginBottom: 5 }}>
             DASHBOARD
           </div>
           <h1 style={{ ...MONO, fontSize: 17, color: '#F5F5F5', letterSpacing: '0.08em' }}>
@@ -177,7 +177,7 @@ export default function AccountsPage() {
                     ...MONO,
                     fontSize: 9,
                     letterSpacing: '0.14em',
-                    color: '#3A3A3A',
+                    color: '#888888',
                     padding: '10px 16px',
                     textAlign: 'left',
                     fontWeight: 500,
@@ -212,7 +212,7 @@ export default function AccountsPage() {
                     {a.AccountRef}
                   </Link>
                 </td>
-                <td style={{ ...MONO, fontSize: 12, color: '#5A5A5A', padding: '11px 16px', letterSpacing: '0.06em' }}>
+                <td style={{ ...MONO, fontSize: 12, color: '#888888', padding: '11px 16px', letterSpacing: '0.06em' }}>
                   {a.BankAccountNumber ?? '—'}
                 </td>
                 <td style={{ fontSize: 12, color: '#B0B0B0', padding: '11px 16px', fontFamily: 'var(--font-sans)' }}>
@@ -221,7 +221,7 @@ export default function AccountsPage() {
                 <td style={{ padding: '11px 16px' }}>
                   <StatusBadge status={a.Status} />
                 </td>
-                <td style={{ ...MONO, fontSize: 10, color: '#3A3A3A', padding: '11px 16px', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
+                <td style={{ ...MONO, fontSize: 10, color: '#888888', padding: '11px 16px', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
                   {new Date(a.CreatedAt).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </td>
               </tr>
@@ -233,7 +233,7 @@ export default function AccountsPage() {
                   style={{
                     ...MONO,
                     fontSize: 11,
-                    color: '#2A2A2A',
+                    color: '#555555',
                     textAlign: 'center',
                     padding: '52px 16px',
                     letterSpacing: '0.12em',

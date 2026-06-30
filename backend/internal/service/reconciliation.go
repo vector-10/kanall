@@ -46,8 +46,8 @@ type webhookPayload struct {
 			Type                  string  `json:"type"`
 			Time                  string  `json:"time"`
 			ResponseCode          string  `json:"responseCode"`
-			TransactionAmount     int64   `json:"transactionAmount"` // kobo
-			Fee                   float64 `json:"fee"`               // naira decimal
+			TransactionAmount     int64       `json:"transactionAmount"`
+			Fee                   json.Number `json:"fee"`
 			Currency              string  `json:"currency"`
 			AliasAccountReference string  `json:"aliasAccountReference"`
 			Narration             string  `json:"narration"`
@@ -126,7 +126,7 @@ func (s *ReconciliationService) HandleWebhook(ctx context.Context, rawBody []byt
 
 func (s *ReconciliationService) postEntries(ctx context.Context, payload webhookPayload) error {
 	amountNGN := decimal.NewFromInt(payload.Data.Transaction.TransactionAmount).Div(decimal.NewFromInt(100))
-	feeNGN := decimal.NewFromFloat(payload.Data.Transaction.Fee)
+	feeNGN, _ := decimal.NewFromString(payload.Data.Transaction.Fee.String())
 
 	accountRef := payload.Data.Transaction.AliasAccountReference
 	va, err := s.store.Accounts.GetByAccountRefGlobal(ctx, accountRef)

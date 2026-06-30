@@ -34,7 +34,7 @@ func (h *WebhookHandler) ListDeadLetters(w http.ResponseWriter, r *http.Request)
 
 	deadLetters, err := h.store.WebhookDeliveries.ListDeadLetters(r.Context(), tenant.ID)
 	if err != nil {
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 

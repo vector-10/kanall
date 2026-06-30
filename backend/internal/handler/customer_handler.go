@@ -32,7 +32,7 @@ func (h *CustomerHandler) Get(w http.ResponseWriter, r *http.Request) {
 			apierror.Respond(w, apierror.NotFound("customer not found"))
 			return
 		}
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 
@@ -64,7 +64,7 @@ func (h *CustomerHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	customers, err := h.store.Customers.ListByTenant(r.Context(), tenant.ID, limit+1, cursorID)
 	if err != nil {
-		apierror.Respond(w, apierror.Internal())
+		internalError(w, r, err)
 		return
 	}
 

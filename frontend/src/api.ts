@@ -27,6 +27,7 @@ export interface Tenant {
   name: string
   email: string | null
   status: string
+  apiKeySuffix: string | null
   createdAt: string
 }
 
@@ -96,12 +97,13 @@ export const api = {
       .then(r => r.ok)
       .catch(() => false),
 
+  // Step 1 — submit registration form; returns tenantId only, no API key yet
   register: (name: string, email: string, password: string) =>
-    request<{ tenantId: string; apiKey: string; warning: string }>(
-      'POST',
-      '/register',
-      { name, email, password },
-    ),
+    request<{ tenantId: string }>('POST', '/register', { name, email, password }),
+
+  // Step 2 — submit OTP; returns API key (shown once) and sets session cookie
+  verifyEmail: (tenantId: string, otp: string) =>
+    request<{ apiKey: string }>('POST', '/auth/verify-email', { tenantId, otp }),
 
   auth: {
     login: (email: string, password: string) =>
@@ -111,6 +113,8 @@ export const api = {
       request<{ status: string }>('POST', '/auth/logout'),
 
     me: () => request<Tenant>('GET', '/auth/me'),
+
+    rotateKey: () => request<{ apiKey: string }>('POST', '/auth/rotate-key'),
   },
 
   accounts: {

@@ -56,8 +56,9 @@ func (n *NombaProvider) getToken(ctx context.Context) (string, error) {
 
 func (n *NombaProvider) doIssue(ctx context.Context) (string, error) {
 	body, _ := json.Marshal(map[string]string{
-		"clientId":     n.cfg.NombaClientID,
-		"clientSecret": n.cfg.NombaClientSecret,
+		"grant_type":    "client_credentials",
+		"client_id":     n.cfg.NombaClientID,
+		"client_secret": n.cfg.NombaClientSecret,
 	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		n.cfg.NombaBaseURL+"/v1/auth/token/issue",
@@ -75,7 +76,8 @@ func (n *NombaProvider) doIssue(ctx context.Context) (string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("nomba auth/issue failed: status %d", resp.StatusCode)
+		rb, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("nomba auth/issue failed: status %d: %s", resp.StatusCode, rb)
 	}
 
 	var authResp nombaAuthResponse
@@ -110,7 +112,8 @@ func (n *NombaProvider) doRefresh(ctx context.Context) (string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("nomba auth/refresh failed: status %d", resp.StatusCode)
+		rb, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("nomba auth/refresh failed: status %d: %s", resp.StatusCode, rb)
 	}
 
 	var authResp nombaAuthResponse
