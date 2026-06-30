@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS tenants_email_key;
+ALTER TABLE tenants DROP COLUMN IF EXISTS email;
