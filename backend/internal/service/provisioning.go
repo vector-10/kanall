@@ -87,6 +87,20 @@ func (s *ProvisioningService) Provision(ctx context.Context, input ProvisionInpu
 	}
 
 	if err := s.store.Accounts.Create(ctx, va); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			existing, fetchErr := s.store.Accounts.GetByCustomerID(ctx, input.TenantID, customer.ID)
+			if fetchErr != nil {
+				return nil, fmt.Errorf("va lookup after conflict: %w", fetchErr)
+			}
+			if expireErr := s.provider.Expire(ctx, accountRef); expireErr != nil {
+				log.Printf("provisioning: failed to expire orphaned nomba VA %s: %v", accountRef, expireErr)
+			}
+			return existing, nil
+		}
+		if expireErr := s.provider.Expire(ctx, accountRef); expireErr != nil {
+			log.Printf("provisioning: failed to expire orphaned nomba VA %s: %v", accountRef, expireErr)
+		}
 		return nil, fmt.Errorf("failed to save virtual account: %w", err)
 	}
 

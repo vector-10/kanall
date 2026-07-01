@@ -77,9 +77,7 @@ func NewRouter(
 		r.With(accountReadRL.ByAPIKey).Get("/accounts", accountH.List)
 		r.With(accountReadRL.ByAPIKey).Get("/accounts/{accountRef}", accountH.Get)
 		r.With(accountWriteRL.ByAPIKey).Patch("/accounts/{accountRef}", accountH.Update)
-		r.With(accountWriteRL.ByAPIKey).Post("/accounts/{accountRef}/suspend", accountH.Suspend)
 		r.With(accountWriteRL.ByAPIKey).Post("/accounts/{accountRef}/expire", accountH.Expire)
-		r.With(accountWriteRL.ByAPIKey).Post("/accounts/{accountRef}/reactivate", accountH.Reactivate)
 		r.With(statementRL.ByAPIKey).Get("/accounts/{accountRef}/statement", statementH.Get)
 
 		r.With(customerRL.ByAPIKey).Get("/customers", customerH.List)

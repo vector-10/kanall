@@ -16,9 +16,8 @@ import (
 var ErrInvalidTransition = errors.New("invalid state transition")
 
 var validTransitions = map[string]map[string]bool{
-	"active":    {"suspended": true, "expired": true},
-	"suspended": {"active": true, "expired": true},
-	"expired":   {},
+	"active":  {"expired": true},
+	"expired": {},
 }
 
 type LifecycleService struct {

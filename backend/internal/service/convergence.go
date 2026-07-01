@@ -48,11 +48,14 @@ func (s *ConvergenceService) sweep(ctx context.Context) error {
 		return nil
 	}
 
-	// One provider call per sweep covering the last 48h — safe window for any provisional entry
 	now := time.Now()
 	txns, err := s.provider.FetchTransactions(ctx, now.Add(-48*time.Hour), now)
 	if err != nil {
 		return fmt.Errorf("convergence: provider fetch failed: %w", err)
+	}
+	if len(txns) == 0 {
+		log.Printf("convergence: nomba returned 0 transactions — skipping sweep to avoid false reversals")
+		return nil
 	}
 
 	confirmed := make(map[string]bool, len(txns))

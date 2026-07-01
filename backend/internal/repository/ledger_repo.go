@@ -70,7 +70,7 @@ func (r *LedgerRepo) MarkAsReversed(ctx context.Context, nombaTxnRef string) err
 func (r *LedgerRepo) ListProvisional(ctx context.Context) ([]model.LedgerEntry, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, tenant_id, transaction_group_id, nomba_txn_ref, account_type, account_id,
-		       direction, amount, currency, status, reverses_group_id, narration, created_at
+		       direction, amount, fee, currency, status, reverses_group_id, narration, created_at
 		FROM ledger_entries
 		WHERE status = 'provisional' AND account_type = 'virtual_account'
 		ORDER BY created_at ASC
@@ -85,7 +85,7 @@ func (r *LedgerRepo) ListProvisional(ctx context.Context) ([]model.LedgerEntry, 
 func (r *LedgerRepo) ListByAccount(ctx context.Context, tenantID, accountID uuid.UUID) ([]model.LedgerEntry, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, tenant_id, transaction_group_id, nomba_txn_ref, account_type, account_id,
-		       direction, amount, currency, status, reverses_group_id, narration, created_at
+		       direction, amount, fee, currency, status, reverses_group_id, narration, created_at
 		FROM ledger_entries
 		WHERE tenant_id = $1 AND account_id = $2
 		ORDER BY created_at ASC

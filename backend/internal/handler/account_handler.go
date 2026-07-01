@@ -169,16 +169,8 @@ func (h *AccountHandler) Update(w http.ResponseWriter, r *http.Request) {
 	apierror.WriteJSON(w, http.StatusOK, va)
 }
 
-func (h *AccountHandler) Suspend(w http.ResponseWriter, r *http.Request) {
-	h.transition(w, r, "suspended")
-}
-
 func (h *AccountHandler) Expire(w http.ResponseWriter, r *http.Request) {
 	h.transition(w, r, "expired")
-}
-
-func (h *AccountHandler) Reactivate(w http.ResponseWriter, r *http.Request) {
-	h.transition(w, r, "active")
 }
 
 func (h *AccountHandler) transition(w http.ResponseWriter, r *http.Request, toStatus string) {

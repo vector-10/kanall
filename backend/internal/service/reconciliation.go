@@ -99,6 +99,12 @@ func (s *ReconciliationService) HandleWebhook(ctx context.Context, rawBody []byt
 		return fmt.Errorf("webhook signature invalid")
 	}
 
+	if payload.RequestID == "" {
+		errMsg := "missing requestId"
+		_ = s.store.Webhooks.UpdateStatus(ctx, event.ID, "dead_letter", &errMsg)
+		return fmt.Errorf("webhook missing requestId")
+	}
+
 	if payload.Data.Transaction.Type != "vact_transfer" {
 		_ = s.store.Webhooks.UpdateStatus(ctx, event.ID, "processed", nil)
 		return nil
