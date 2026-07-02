@@ -105,15 +105,39 @@ func (r *AccountRepo) GetByCustomerID(ctx context.Context, tenantID, customerID 
 	return va, nil
 }
 
-func (r *AccountRepo) Update(ctx context.Context, tenantID uuid.UUID, accountRef string, callbackURL *string, expectedAmount *decimal.Decimal) error {
+func (r *AccountRepo) Update(ctx context.Context, tenantID uuid.UUID, accountRef string, callbackURL *string, expectedAmount *decimal.Decimal, bankAccountName *string) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE virtual_accounts
-		SET callback_url    = COALESCE($3, callback_url),
-		    expected_amount = COALESCE($4, expected_amount),
-		    updated_at      = now()
+		SET callback_url      = COALESCE($3, callback_url),
+		    expected_amount   = COALESCE($4, expected_amount),
+		    bank_account_name = COALESCE($5, bank_account_name),
+		    updated_at        = now()
 		WHERE tenant_id = $1 AND account_ref = $2
-	`, tenantID, accountRef, callbackURL, expectedAmount)
+	`, tenantID, accountRef, callbackURL, expectedAmount, bankAccountName)
 	return err
+}
+
+func (r *AccountRepo) GetStateHistory(ctx context.Context, vaID uuid.UUID) ([]model.AccountStateLog, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, virtual_account_id, from_status, to_status, reason, created_at
+		FROM account_state_log
+		WHERE virtual_account_id = $1
+		ORDER BY created_at ASC
+	`, vaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var log []model.AccountStateLog
+	for rows.Next() {
+		var e model.AccountStateLog
+		if err := rows.Scan(&e.ID, &e.VirtualAccountID, &e.FromStatus, &e.ToStatus, &e.Reason, &e.CreatedAt); err != nil {
+			return nil, err
+		}
+		log = append(log, e)
+	}
+	return log, rows.Err()
 }
 
 func (r *AccountRepo) ListByTenant(ctx context.Context, tenantID uuid.UUID, limit int, cursorID *uuid.UUID) ([]model.VirtualAccount, error) {

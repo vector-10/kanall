@@ -33,6 +33,7 @@ type provisionRequest struct {
 type accountUpdateRequest struct {
 	CallbackURL    *string          `json:"callbackUrl"`
 	ExpectedAmount *decimal.Decimal `json:"expectedAmount"`
+	Name           *string          `json:"name"`
 }
 
 type lifecycleRequest struct {
@@ -146,12 +147,12 @@ func (h *AccountHandler) Update(w http.ResponseWriter, r *http.Request) {
 		apierror.Respond(w, apierror.BadRequest("invalid request body"))
 		return
 	}
-	if req.CallbackURL == nil && req.ExpectedAmount == nil {
-		apierror.Respond(w, apierror.BadRequest("at least one of callbackUrl or expectedAmount is required"))
+	if req.CallbackURL == nil && req.ExpectedAmount == nil && req.Name == nil {
+		apierror.Respond(w, apierror.BadRequest("at least one of callbackUrl, expectedAmount, or name is required"))
 		return
 	}
 
-	if err := h.store.Accounts.Update(r.Context(), tenant.ID, accountRef, req.CallbackURL, req.ExpectedAmount); err != nil {
+	if err := h.store.Accounts.Update(r.Context(), tenant.ID, accountRef, req.CallbackURL, req.ExpectedAmount, req.Name); err != nil {
 		internalError(w, r, err)
 		return
 	}
@@ -171,6 +172,56 @@ func (h *AccountHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 func (h *AccountHandler) Expire(w http.ResponseWriter, r *http.Request) {
 	h.transition(w, r, "expired")
+}
+
+func (h *AccountHandler) Balance(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenant(r.Context())
+	accountRef := chi.URLParam(r, "accountRef")
+
+	va, err := h.store.Accounts.GetByAccountRef(r.Context(), tenant.ID, accountRef)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			apierror.Respond(w, apierror.NotFound("account not found"))
+			return
+		}
+		internalError(w, r, err)
+		return
+	}
+
+	balance, err := h.store.Ledger.GetBalance(r.Context(), tenant.ID, va.ID)
+	if err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	apierror.WriteJSON(w, http.StatusOK, map[string]any{
+		"accountRef": accountRef,
+		"balance":    balance.StringFixed(2),
+		"currency":   "NGN",
+	})
+}
+
+func (h *AccountHandler) History(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenant(r.Context())
+	accountRef := chi.URLParam(r, "accountRef")
+
+	va, err := h.store.Accounts.GetByAccountRef(r.Context(), tenant.ID, accountRef)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			apierror.Respond(w, apierror.NotFound("account not found"))
+			return
+		}
+		internalError(w, r, err)
+		return
+	}
+
+	history, err := h.store.Accounts.GetStateHistory(r.Context(), va.ID)
+	if err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	apierror.WriteJSON(w, http.StatusOK, map[string]any{"history": history})
 }
 
 func (h *AccountHandler) transition(w http.ResponseWriter, r *http.Request, toStatus string) {

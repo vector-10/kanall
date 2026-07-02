@@ -9,6 +9,8 @@ import AccountDetailPage from './pages/AccountDetailPage'
 import StatementPage from './pages/StatementPage'
 import DeadLettersPage from './pages/DeadLettersPage'
 import SettingsPage from './pages/SettingsPage'
+import CustomersPage from './pages/CustomersPage'
+import CustomerDetailPage from './pages/CustomerDetailPage'
 import { api } from './api'
 
 function DashboardLayout({ onLogout }: { onLogout: () => void }) {
@@ -98,6 +100,8 @@ function AppRoutes() {
           <Route path="/accounts" element={<AccountsPage />} />
           <Route path="/accounts/:accountRef" element={<AccountDetailPage />} />
           <Route path="/accounts/:accountRef/statement" element={<StatementPage />} />
+          <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/customers/:id" element={<CustomerDetailPage />} />
           <Route path="/dead-letters" element={<DeadLettersPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/accounts" replace />} />

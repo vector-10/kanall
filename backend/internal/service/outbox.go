@@ -3,11 +3,16 @@ package service
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/vector-10/kanall/internal/crypto"
 	"github.com/vector-10/kanall/internal/model"
 	"github.com/vector-10/kanall/internal/repository"
 )
@@ -23,16 +28,18 @@ var deliveryBackoff = []time.Duration{
 const maxDeliveryAttempts = 5
 
 type OutboxWorker struct {
-	store      *repository.Store
-	httpClient *http.Client
-	sem        chan struct{}
+	store         *repository.Store
+	httpClient    *http.Client
+	sem           chan struct{}
+	encryptionKey string
 }
 
-func NewOutboxWorker(store *repository.Store, httpTimeout time.Duration) *OutboxWorker {
+func NewOutboxWorker(store *repository.Store, httpTimeout time.Duration, encryptionKey string) *OutboxWorker {
 	return &OutboxWorker{
-		store:      store,
-		httpClient: &http.Client{Timeout: httpTimeout},
-		sem:        make(chan struct{}, 10),
+		store:         store,
+		httpClient:    &http.Client{Timeout: httpTimeout},
+		sem:           make(chan struct{}, 10),
+		encryptionKey: encryptionKey,
 	}
 }
 
@@ -78,6 +85,11 @@ func (w *OutboxWorker) deliver(ctx context.Context, d model.TenantWebhookDeliver
 	}
 	req.Header.Set("Content-Type", "application/json")
 
+	// Sign the delivery if this tenant has a webhook secret configured.
+	if sig, ok := w.buildSignature(ctx, d); ok {
+		req.Header.Set("X-Kanall-Signature", sig)
+	}
+
 	resp, err := w.httpClient.Do(req)
 	if err != nil {
 		w.fail(ctx, d, fmt.Sprintf("http: %v", err))
@@ -93,6 +105,33 @@ func (w *OutboxWorker) deliver(ctx context.Context, d model.TenantWebhookDeliver
 	}
 
 	w.fail(ctx, d, fmt.Sprintf("non-2xx: %d", resp.StatusCode))
+}
+
+// buildSignature looks up the tenant's webhook secret and returns the
+// X-Kanall-Signature header value. Returns ("", false) if the tenant has
+// no secret configured or if decryption fails.
+func (w *OutboxWorker) buildSignature(ctx context.Context, d model.TenantWebhookDelivery) (string, bool) {
+	if w.encryptionKey == "" {
+		return "", false
+	}
+
+	tenant, err := w.store.Tenants.GetByID(ctx, d.TenantID)
+	if err != nil || tenant.WebhookSecretEncrypted == nil {
+		return "", false
+	}
+
+	rawSecret, err := crypto.Decrypt(*tenant.WebhookSecretEncrypted, w.encryptionKey)
+	if err != nil {
+		log.Printf("outbox: failed to decrypt webhook secret for tenant %s: %v", d.TenantID, err)
+		return "", false
+	}
+
+	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
+	signed := timestamp + "." + string(d.Payload)
+	mac := hmac.New(sha256.New, []byte(rawSecret))
+	mac.Write([]byte(signed))
+	sig := "t=" + timestamp + ",v1=" + hex.EncodeToString(mac.Sum(nil))
+	return sig, true
 }
 
 func (w *OutboxWorker) fail(ctx context.Context, d model.TenantWebhookDelivery, reason string) {

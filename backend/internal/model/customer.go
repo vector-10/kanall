@@ -16,6 +16,9 @@ type Customer struct {
 	Name         string
 	BVNEncrypted *string
 	BVNLast4     *string
+	NINEncrypted *string
+	NINLast4     *string
+	KYCTier      int
 	Status       string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time

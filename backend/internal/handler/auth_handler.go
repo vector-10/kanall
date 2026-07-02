@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"log"
@@ -16,10 +18,11 @@ import (
 )
 
 type AuthHandler struct {
-	auth         *service.AuthService
-	verification *service.VerificationService
-	store        *repository.Store
-	env          string
+	auth          *service.AuthService
+	verification  *service.VerificationService
+	store         *repository.Store
+	env           string
+	encryptionKey string
 }
 
 type loginRequest struct {
@@ -78,8 +81,90 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		"email":        tenant.Email,
 		"status":       tenant.Status,
 		"apiKeySuffix": tenant.APIKeySuffix,
+		"kycStatus":    tenant.KYCStatus,
+		"businessType": tenant.BusinessType,
 		"createdAt":    tenant.CreatedAt,
 	})
+}
+
+type businessKYCRequest struct {
+	BusinessType string `json:"businessType"`
+	CACNumber    string `json:"cacNumber"`
+}
+
+func (h *AuthHandler) SubmitBusinessKYC(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenant(r.Context())
+	if tenant == nil {
+		apierror.Respond(w, apierror.Unauthorized())
+		return
+	}
+
+	var req businessKYCRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apierror.Respond(w, apierror.BadRequest("invalid request body"))
+		return
+	}
+	if req.BusinessType == "" {
+		apierror.Respond(w, apierror.BadRequest("businessType is required"))
+		return
+	}
+
+	validTypes := map[string]bool{
+		"sole_proprietor":     true,
+		"registered_business": true,
+		"ngo":                 true,
+		"other":               true,
+	}
+	if !validTypes[req.BusinessType] {
+		apierror.Respond(w, apierror.BadRequest("businessType must be one of: sole_proprietor, registered_business, ngo, other"))
+		return
+	}
+
+	if err := h.store.Tenants.SubmitBusinessKYC(r.Context(), tenant.ID, req.BusinessType, req.CACNumber); err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	apierror.WriteJSON(w, http.StatusOK, map[string]string{
+		"kycStatus":    "verified",
+		"businessType": req.BusinessType,
+	})
+}
+
+func (h *AuthHandler) WebhookSecret(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenant(r.Context())
+	if tenant == nil {
+		apierror.Respond(w, apierror.Unauthorized())
+		return
+	}
+
+	if tenant.WebhookSecretEncrypted != nil {
+		raw, err := crypto.Decrypt(*tenant.WebhookSecretEncrypted, h.encryptionKey)
+		if err != nil {
+			internalError(w, r, err)
+			return
+		}
+		apierror.WriteJSON(w, http.StatusOK, map[string]string{"webhookSecret": raw})
+		return
+	}
+
+	rawBytes := make([]byte, 32)
+	if _, err := rand.Read(rawBytes); err != nil {
+		internalError(w, r, err)
+		return
+	}
+	raw := hex.EncodeToString(rawBytes)
+	encrypted, err := crypto.Encrypt(raw, h.encryptionKey)
+	if err != nil {
+		internalError(w, r, err)
+		return
+	}
+	if err := h.store.Tenants.UpdateWebhookSecret(r.Context(), tenant.ID, encrypted); err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	apierror.WriteJSON(w, http.StatusOK, map[string]string{"webhookSecret": raw})
 }
 
 type verifyEmailRequest struct {

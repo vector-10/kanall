@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api'
@@ -24,6 +25,10 @@ const MONO = { fontFamily: 'var(--font-mono)' }
 export default function AccountDetailPage() {
   const { accountRef } = useParams<{ accountRef: string }>()
   const queryClient = useQueryClient()
+  const [showHistory, setShowHistory] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const [renameError, setRenameError] = useState('')
 
   const { data: account, isLoading, error } = useQuery({
     queryKey: ['account', accountRef],
@@ -35,12 +40,35 @@ export default function AccountDetailPage() {
     },
   })
 
+  const { data: balanceData } = useQuery({
+    queryKey: ['account-balance', accountRef],
+    queryFn: () => api.accounts.balance(accountRef!),
+    enabled: !!accountRef,
+  })
+
+  const { data: historyData } = useQuery({
+    queryKey: ['account-history', accountRef],
+    queryFn: () => api.accounts.history(accountRef!),
+    enabled: !!accountRef && showHistory,
+  })
+
   const onSuccess = (updated: Account) => {
     queryClient.setQueryData(['account', accountRef], updated)
     queryClient.invalidateQueries({ queryKey: ['accounts'] })
   }
 
   const expireMutation = useMutation({ mutationFn: () => api.accounts.expire(accountRef!), onSuccess })
+
+  const renameMutation = useMutation({
+    mutationFn: (name: string) => api.accounts.update(accountRef!, { name }),
+    onSuccess: (updated) => {
+      onSuccess(updated)
+      setRenaming(false)
+      setNameInput('')
+      setRenameError('')
+    },
+    onError: (err: Error) => setRenameError(err.message),
+  })
 
   const mutations: Record<LifecycleAction, typeof expireMutation> = {
     expire: expireMutation,
@@ -56,7 +84,7 @@ export default function AccountDetailPage() {
   )
   if (error) return (
     <div style={{ ...MONO, padding: 28, fontSize: 11, color: '#EF4444', letterSpacing: '0.1em' }}>
-      {error.message}
+      {(error as Error).message}
     </div>
   )
   if (!account) return null
@@ -76,25 +104,16 @@ export default function AccountDetailPage() {
   return (
     <div style={{ padding: '32px 28px', maxWidth: 660 }}>
 
-      {/* Breadcrumb */}
       <Link
         to="/accounts"
-        style={{
-          ...MONO,
-          fontSize: 10,
-          color: '#888888',
-          textDecoration: 'none',
-          letterSpacing: '0.12em',
-          display: 'inline-block',
-          marginBottom: 28,
-        }}
+        style={{ ...MONO, fontSize: 10, color: '#888888', textDecoration: 'none', letterSpacing: '0.12em', display: 'inline-block', marginBottom: 28 }}
         onMouseEnter={e => { e.currentTarget.style.color = '#FFCD32' }}
         onMouseLeave={e => { e.currentTarget.style.color = '#888888' }}
       >
         ← ACCOUNTS
       </Link>
 
-      {/* Account header */}
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
           <h1 style={{ ...MONO, fontSize: 20, color: '#FFCD32', letterSpacing: '0.06em', marginBottom: 6 }}>
@@ -107,28 +126,34 @@ export default function AccountDetailPage() {
         <StatusBadge status={account.Status} />
       </div>
 
-      {/* Terminal KV rows */}
+      {/* Balance chip */}
+      {balanceData && (
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 10,
+          border: '1px solid #2A2A2A',
+          padding: '10px 18px',
+          marginBottom: 20,
+        }}>
+          <span style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: '#555' }}>BALANCE</span>
+          <span style={{ ...MONO, fontSize: 18, color: '#FFCD32', letterSpacing: '0.04em' }}>
+            ₦{Number(balanceData.balance).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+      )}
+
+      {/* KV rows */}
       <div style={{ border: '1px solid #2A2A2A', marginBottom: 20 }}>
         {rows.map(([label, value, mono], i) => (
-          <div
-            key={label}
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 20,
-              padding: '10px 16px',
-              borderBottom: i < rows.length - 1 ? '1px solid #1A1A1A' : 'none',
-            }}
-          >
-            <span style={{
-              ...MONO,
-              fontSize: 9,
-              letterSpacing: '0.14em',
-              color: '#888888',
-              width: 140,
-              flexShrink: 0,
-              paddingTop: 1,
-            }}>
+          <div key={label} style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 20,
+            padding: '10px 16px',
+            borderBottom: i < rows.length - 1 ? '1px solid #1A1A1A' : 'none',
+          }}>
+            <span style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: '#888888', width: 140, flexShrink: 0, paddingTop: 1 }}>
               {label}
             </span>
             <span style={{
@@ -143,6 +168,85 @@ export default function AccountDetailPage() {
           </div>
         ))}
       </div>
+
+      {/* Rename section */}
+      {account.Status === 'active' && (
+        <div style={{ marginBottom: 20 }}>
+          {!renaming ? (
+            <button
+              onClick={() => { setRenaming(true); setNameInput(account.BankAccountName ?? '') }}
+              style={{
+                ...MONO,
+                fontSize: 10,
+                letterSpacing: '0.12em',
+                padding: '7px 16px',
+                background: 'transparent',
+                color: '#888888',
+                border: '1px solid #2A2A2A',
+                cursor: 'pointer',
+              }}
+            >
+              RENAME ACCOUNT
+            </button>
+          ) : (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value)}
+                placeholder="New account name"
+                style={{
+                  ...MONO,
+                  fontSize: 12,
+                  background: '#0A0A0A',
+                  border: '1px solid #3A3A3A',
+                  color: '#C0C0C0',
+                  padding: '7px 12px',
+                  outline: 'none',
+                  minWidth: 200,
+                }}
+              />
+              <button
+                onClick={() => renameMutation.mutate(nameInput)}
+                disabled={renameMutation.isPending || !nameInput.trim()}
+                style={{
+                  ...MONO,
+                  fontSize: 10,
+                  letterSpacing: '0.12em',
+                  padding: '7px 16px',
+                  background: '#FFCD32',
+                  color: '#0D0D0D',
+                  border: 'none',
+                  cursor: 'pointer',
+                  opacity: renameMutation.isPending ? 0.5 : 1,
+                }}
+              >
+                {renameMutation.isPending ? '...' : 'SAVE'}
+              </button>
+              <button
+                onClick={() => { setRenaming(false); setRenameError('') }}
+                style={{
+                  ...MONO,
+                  fontSize: 10,
+                  letterSpacing: '0.12em',
+                  padding: '7px 14px',
+                  background: 'transparent',
+                  color: '#555',
+                  border: '1px solid #2A2A2A',
+                  cursor: 'pointer',
+                }}
+              >
+                CANCEL
+              </button>
+            </div>
+          )}
+          {renameError && (
+            <p style={{ ...MONO, fontSize: 11, color: '#EF4444', marginTop: 8, letterSpacing: '0.06em' }}>
+              {renameError}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Lifecycle buttons */}
       {actions.length > 0 && (
@@ -189,12 +293,58 @@ export default function AccountDetailPage() {
           padding: '9px 20px',
           display: 'inline-block',
           background: 'rgba(255,205,50,0.04)',
+          marginRight: 10,
         }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = '#FFCD32' }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = '#3A3A1A' }}
       >
         VIEW STATEMENT →
       </Link>
+
+      {/* History toggle */}
+      <button
+        onClick={() => setShowHistory(v => !v)}
+        style={{
+          ...MONO,
+          fontSize: 10,
+          letterSpacing: '0.12em',
+          padding: '9px 20px',
+          background: 'transparent',
+          color: '#888888',
+          border: '1px solid #2A2A2A',
+          cursor: 'pointer',
+        }}
+      >
+        {showHistory ? 'HIDE HISTORY' : 'VIEW HISTORY'}
+      </button>
+
+      {/* State history */}
+      {showHistory && (
+        <div style={{ marginTop: 24, borderLeft: '2px solid #2A2A2A', paddingLeft: 20 }}>
+          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: '#555', marginBottom: 16 }}>
+            ACCOUNT STATE HISTORY
+          </div>
+          {(historyData?.history ?? []).length === 0 ? (
+            <span style={{ ...MONO, fontSize: 11, color: '#555' }}>No history yet.</span>
+          ) : (
+            (historyData?.history ?? []).map(entry => (
+              <div key={entry.ID} style={{ display: 'flex', gap: 16, marginBottom: 14, alignItems: 'flex-start' }}>
+                <div style={{ ...MONO, fontSize: 10, color: '#555', whiteSpace: 'nowrap', paddingTop: 1 }}>
+                  {new Date(entry.CreatedAt).toLocaleDateString('en-NG', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
+                <div>
+                  <div style={{ ...MONO, fontSize: 11, color: '#C0C0C0', letterSpacing: '0.06em' }}>
+                    {entry.FromStatus ? `${entry.FromStatus.toUpperCase()} → ` : ''}{entry.ToStatus.toUpperCase()}
+                  </div>
+                  {entry.Reason && (
+                    <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{entry.Reason}</div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   )
 }

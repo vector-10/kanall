@@ -31,10 +31,10 @@ func NewRouter(
 
 	webhookH      := &WebhookHandler{reconciliation: reconciliationSvc, store: store}
 	accountH      := &AccountHandler{provisioning: provisioningSvc, lifecycle: lifecycleSvc, store: store}
-	customerH     := &CustomerHandler{store: store}
+	customerH     := &CustomerHandler{store: store, encryptionKey: cfg.EncryptionKey}
 	statementH    := &StatementHandler{statement: statementSvc}
 	registrationH := &RegistrationHandler{registration: registrationSvc}
-	authH         := &AuthHandler{auth: authSvc, verification: verificationSvc, store: store, env: cfg.Env}
+	authH         := &AuthHandler{auth: authSvc, verification: verificationSvc, store: store, env: cfg.Env, encryptionKey: cfg.EncryptionKey}
 
 	registerRL     := middleware.NewRateLimiter(5)
 	loginRL        := middleware.NewRateLimiter(10)
@@ -68,6 +68,9 @@ func NewRouter(
 		r.With(registerRL.ByIP).Post("/verify-email", authH.VerifyEmail)
 		r.With(middleware.TenantAuth(store)).Get("/me", authH.Me)
 		r.With(middleware.TenantAuth(store)).Post("/rotate-key", authH.RotateKey)
+		r.With(middleware.TenantAuth(store)).Post("/business-kyc", authH.SubmitBusinessKYC)
+		r.With(middleware.TenantAuth(store)).Post("/webhook-secret", authH.WebhookSecret)
+		r.With(middleware.TenantAuth(store)).Get("/misdirected", webhookH.ListMisdirected)
 	})
 
 	r.Route("/v1", func(r chi.Router) {
@@ -79,9 +82,13 @@ func NewRouter(
 		r.With(accountWriteRL.ByAPIKey).Patch("/accounts/{accountRef}", accountH.Update)
 		r.With(accountWriteRL.ByAPIKey).Post("/accounts/{accountRef}/expire", accountH.Expire)
 		r.With(statementRL.ByAPIKey).Get("/accounts/{accountRef}/statement", statementH.Get)
+		r.With(accountReadRL.ByAPIKey).Get("/accounts/{accountRef}/balance", accountH.Balance)
+		r.With(accountReadRL.ByAPIKey).Get("/accounts/{accountRef}/history", accountH.History)
 
 		r.With(customerRL.ByAPIKey).Get("/customers", customerH.List)
 		r.With(customerRL.ByAPIKey).Get("/customers/{id}", customerH.Get)
+		r.With(accountWriteRL.ByAPIKey).Patch("/customers/{id}", customerH.Patch)
+		r.With(accountWriteRL.ByAPIKey).Post("/customers/{id}/kyc", customerH.UpgradeKYC)
 
 		r.With(accountReadRL.ByAPIKey).Get("/webhooks/dead-letters", webhookH.ListDeadLetters)
 	})

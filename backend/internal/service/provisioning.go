@@ -131,12 +131,14 @@ func (s *ProvisioningService) getOrCreateCustomer(ctx context.Context, input Pro
 		suffix := bvnSuffix(input.BVN)
 		bvnLast4 = &suffix
 	}
+	kycTier := 1
 	c := &model.Customer{
 		ID:          uuid.New(),
 		TenantID:    input.TenantID,
 		ExternalRef: input.ExternalRef,
 		Name:        input.Name,
 		BVNLast4:    bvnLast4,
+		KYCTier:     kycTier,
 		Status:      "active",
 	}
 

@@ -21,13 +21,15 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return res.json() as T
 }
 
-// Auth/me returns explicit camelCase keys (Go map[string]any, not a struct)
+// Auth/me and other map[string]any responses use camelCase keys
 export interface Tenant {
   id: string
   name: string
   email: string | null
   status: string
   apiKeySuffix: string | null
+  kycStatus: string
+  businessType: string | null
   createdAt: string
 }
 
@@ -45,6 +47,19 @@ export interface Account {
   Status: string
   CallbackURL: string | null
   ExpectedAmount: string | null
+  CreatedAt: string
+  UpdatedAt: string
+}
+
+export interface Customer {
+  ID: string
+  TenantID: string
+  ExternalRef: string
+  Name: string
+  BVNLast4: string | null
+  NINLast4: string | null
+  KYCTier: number
+  Status: string
   CreatedAt: string
   UpdatedAt: string
 }
@@ -86,8 +101,34 @@ export interface WebhookDelivery {
   CreatedAt: string
 }
 
+export interface WebhookEvent {
+  ID: string
+  NombaTxnRef: string | null
+  SignatureValid: boolean
+  Status: string
+  Category: string | null
+  ErrorMessage: string | null
+  RetryCount: number
+  ReceivedAt: string
+  ProcessedAt: string | null
+}
+
+export interface AccountStateLog {
+  ID: string
+  VirtualAccountID: string
+  FromStatus: string | null
+  ToStatus: string
+  Reason: string | null
+  CreatedAt: string
+}
+
 export interface AccountsResponse {
   accounts: Account[]
+  pagination: { limit: number; nextCursor: string | null; hasMore: boolean }
+}
+
+export interface CustomersResponse {
+  customers: Customer[]
   pagination: { limit: number; nextCursor: string | null; hasMore: boolean }
 }
 
@@ -97,11 +138,9 @@ export const api = {
       .then(r => r.ok)
       .catch(() => false),
 
-  // Step 1 — submit registration form; returns tenantId only, no API key yet
   register: (name: string, email: string, password: string) =>
     request<{ tenantId: string }>('POST', '/register', { name, email, password }),
 
-  // Step 2 — submit OTP; returns API key (shown once) and sets session cookie
   verifyEmail: (tenantId: string, otp: string) =>
     request<{ apiKey: string }>('POST', '/auth/verify-email', { tenantId, otp }),
 
@@ -115,6 +154,12 @@ export const api = {
     me: () => request<Tenant>('GET', '/auth/me'),
 
     rotateKey: () => request<{ apiKey: string }>('POST', '/auth/rotate-key'),
+
+    submitBusinessKYC: (businessType: string, cacNumber?: string) =>
+      request<{ kycStatus: string; businessType: string }>('POST', '/auth/business-kyc', { businessType, cacNumber }),
+
+    webhookSecret: () =>
+      request<{ webhookSecret: string }>('POST', '/auth/webhook-secret'),
   },
 
   accounts: {
@@ -134,25 +179,50 @@ export const api = {
       expectedAmount?: number
     }) => request<Account>('POST', '/v1/accounts', body),
 
-    update: (ref: string, body: { callbackUrl?: string; expectedAmount?: number }) =>
+    update: (ref: string, body: { callbackUrl?: string; expectedAmount?: number; name?: string }) =>
       request<Account>('PATCH', `/v1/accounts/${ref}`, body),
-
-    suspend: (ref: string) =>
-      request<Account>('POST', `/v1/accounts/${ref}/suspend`),
 
     expire: (ref: string) =>
       request<Account>('POST', `/v1/accounts/${ref}/expire`),
-
-    reactivate: (ref: string) =>
-      request<Account>('POST', `/v1/accounts/${ref}/reactivate`),
 
     statement: (ref: string, after?: string) =>
       request<Statement>(
         'GET',
         `/v1/accounts/${ref}/statement${after ? `?after=${after}` : ''}`,
       ),
+
+    balance: (ref: string) =>
+      request<{ accountRef: string; balance: string; currency: string }>('GET', `/v1/accounts/${ref}/balance`),
+
+    history: (ref: string) =>
+      request<{ history: AccountStateLog[] | null }>('GET', `/v1/accounts/${ref}/history`),
   },
 
+  customers: {
+    list: (after?: string) =>
+      request<CustomersResponse>(
+        'GET',
+        `/v1/customers${after ? `?after=${after}` : ''}`,
+      ),
+
+    get: (id: string) => request<Customer>('GET', `/v1/customers/${id}`),
+
+    patch: (id: string, body: { name: string }) =>
+      request<Customer>('PATCH', `/v1/customers/${id}`, body),
+
+    upgradeKYC: (id: string, nin: string) =>
+      request<Customer>('POST', `/v1/customers/${id}/kyc`, { nin }),
+  },
+
+  webhooks: {
+    deadLetters: () =>
+      request<{ deadLetters: WebhookDelivery[] }>('GET', '/v1/webhooks/dead-letters'),
+
+    misdirected: () =>
+      request<{ events: WebhookEvent[] | null }>('GET', '/auth/misdirected'),
+  },
+
+  // kept for backwards compat with existing call sites
   deadLetters: () =>
     request<{ deadLetters: WebhookDelivery[] }>('GET', '/v1/webhooks/dead-letters'),
 }

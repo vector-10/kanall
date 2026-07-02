@@ -89,6 +89,15 @@ func (s *ReconciliationService) HandleWebhook(ctx context.Context, rawBody []byt
 	if txnID := payload.Data.Transaction.TransactionID; txnID != "" {
 		event.NombaTxnRef = &txnID
 	}
+
+	if !sigValid {
+		cat := "sig_invalid"
+		event.Category = &cat
+	} else if payload.Data.Transaction.Type != "vact_transfer" {
+		cat := "non_payment_event"
+		event.Category = &cat
+	}
+
 	if err := s.store.Webhooks.Create(ctx, event); err != nil {
 		return fmt.Errorf("failed to persist webhook: %w", err)
 	}
@@ -101,6 +110,8 @@ func (s *ReconciliationService) HandleWebhook(ctx context.Context, rawBody []byt
 
 	if payload.RequestID == "" {
 		errMsg := "missing requestId"
+		cat := "processing_error"
+		_ = s.store.Webhooks.UpdateCategory(ctx, event.ID, cat)
 		_ = s.store.Webhooks.UpdateStatus(ctx, event.ID, "dead_letter", &errMsg)
 		return fmt.Errorf("webhook missing requestId")
 	}
@@ -113,21 +124,38 @@ func (s *ReconciliationService) HandleWebhook(ctx context.Context, rawBody []byt
 	if err := s.postEntries(ctx, payload); err != nil {
 		errMsg := err.Error()
 		status := "failed"
+		category := "processing_error"
 		var pErr *permanentErr
 		if errors.As(err, &pErr) {
 			status = "dead_letter"
+			if isMisdirected(err) {
+				category = "misdirected"
+			}
 		}
+		_ = s.store.Webhooks.UpdateCategory(ctx, event.ID, category)
 		_ = s.store.Webhooks.UpdateStatus(ctx, event.ID, status, &errMsg)
 		log.Printf("webhook: %s event=%s txnId=%s err=%v",
 			status, payload.EventType, payload.Data.Transaction.TransactionID, err)
 		return err
 	}
 
+	cat := "payment"
+	_ = s.store.Webhooks.UpdateCategory(ctx, event.ID, cat)
 	_ = s.store.Webhooks.UpdateStatus(ctx, event.ID, "processed", nil)
 	log.Printf("webhook: processed event=%s txnId=%s accountRef=%s",
 		payload.EventType, payload.Data.Transaction.TransactionID,
 		payload.Data.Transaction.AliasAccountReference)
 	return nil
+}
+
+type misdirectedErr struct{ cause error }
+
+func (e *misdirectedErr) Error() string { return e.cause.Error() }
+func (e *misdirectedErr) Unwrap() error { return e.cause }
+func misdirected(err error) error       { return &permanentErr{&misdirectedErr{err}} }
+func isMisdirected(err error) bool {
+	var m *misdirectedErr
+	return errors.As(err, &m)
 }
 
 func (s *ReconciliationService) postEntries(ctx context.Context, payload webhookPayload) error {
@@ -137,7 +165,7 @@ func (s *ReconciliationService) postEntries(ctx context.Context, payload webhook
 	accountRef := payload.Data.Transaction.AliasAccountReference
 	va, err := s.store.Accounts.GetByAccountRefGlobal(ctx, accountRef)
 	if err != nil {
-		return permanent(fmt.Errorf("account not found for ref %q: %w", accountRef, err))
+		return misdirected(fmt.Errorf("account not found for ref %q: %w", accountRef, err))
 	}
 
 	if va.ExpectedAmount != nil && !amountNGN.Equal(*va.ExpectedAmount) {

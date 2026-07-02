@@ -8,13 +8,18 @@ import (
 
 
 type Tenant struct {
-	ID           uuid.UUID
-	Name         string
-	Email        *string
-	APIKeyHash   string
-	APIKeySuffix *string
-	PasswordHash *string
-	Status       string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID                     uuid.UUID
+	Name                   string
+	Email                  *string
+	APIKeyHash             string
+	APIKeySuffix           *string
+	PasswordHash           *string
+	Status                 string
+	BusinessType           *string
+	CACNumber              *string
+	KYCStatus              string
+	KYCSubmittedAt         *time.Time
+	WebhookSecretEncrypted *string
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 }

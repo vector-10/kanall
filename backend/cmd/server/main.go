@@ -65,7 +65,7 @@ func main() {
 	convergenceSvc := service.NewConvergenceService(store, p, cfg.ConvergenceSweepInterval)
 	go convergenceSvc.Start(ctx)
 
-	outboxWorker := service.NewOutboxWorker(store, cfg.OutboxHTTPTimeout)
+	outboxWorker := service.NewOutboxWorker(store, cfg.OutboxHTTPTimeout, cfg.EncryptionKey)
 	go outboxWorker.Start(ctx)
 
 	health := func(w http.ResponseWriter, r *http.Request) {

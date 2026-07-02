@@ -9,9 +9,10 @@ interface Props {
 }
 
 const NAV = [
-  { to: '/accounts', label: 'ACCOUNTS' },
-  { to: '/dead-letters', label: 'DEAD LETTERS' },
-  { to: '/settings', label: 'SETTINGS' },
+  { to: '/accounts',     label: 'ACCOUNTS' },
+  { to: '/customers',    label: 'CUSTOMERS' },
+  { to: '/dead-letters', label: 'EVENTS' },
+  { to: '/settings',     label: 'SETTINGS' },
 ]
 
 export default function Layout({ children, onLogout }: Props) {

@@ -7,13 +7,14 @@ import (
 )
 
 type WebhookEvent struct {
-	ID              uuid.UUID
-	NombaTxnRef     *string
-	PayloadRaw      []byte // raw JSON, scanned from JSONB
-	SignatureValid  bool
-	Status          string
-	ErrorMessage    *string
-	RetryCount      int
-	ReceivedAt      time.Time
-	ProcessedAt     *time.Time
+	ID             uuid.UUID
+	NombaTxnRef    *string
+	PayloadRaw     []byte
+	SignatureValid bool
+	Status         string
+	Category       *string
+	ErrorMessage   *string
+	RetryCount     int
+	ReceivedAt     time.Time
+	ProcessedAt    *time.Time
 }

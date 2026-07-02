@@ -40,3 +40,13 @@ func (h *WebhookHandler) ListDeadLetters(w http.ResponseWriter, r *http.Request)
 
 	apierror.WriteJSON(w, http.StatusOK, map[string]any{"deadLetters": deadLetters})
 }
+
+func (h *WebhookHandler) ListMisdirected(w http.ResponseWriter, r *http.Request) {
+	events, err := h.store.Webhooks.ListMisdirected(r.Context())
+	if err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	apierror.WriteJSON(w, http.StatusOK, map[string]any{"events": events})
+}

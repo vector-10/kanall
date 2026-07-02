@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 import StatusBadge from '../components/StatusBadge'
@@ -5,176 +6,173 @@ import StatusBadge from '../components/StatusBadge'
 const MAX_ATTEMPTS = 5
 const MONO = { fontFamily: 'var(--font-mono)' }
 
+type Tab = 'dead-letters' | 'misdirected'
+
 export default function DeadLettersPage() {
-  const { data, isLoading, error } = useQuery({
+  const [tab, setTab] = useState<Tab>('dead-letters')
+
+  const { data: dlData, isLoading: dlLoading, error: dlError } = useQuery({
     queryKey: ['dead-letters'],
     queryFn: api.deadLetters,
   })
 
-  const items = data?.deadLetters ?? []
+  const { data: mdData, isLoading: mdLoading } = useQuery({
+    queryKey: ['misdirected'],
+    queryFn: api.webhooks.misdirected,
+    enabled: tab === 'misdirected',
+  })
+
+  const items = dlData?.deadLetters ?? []
+  const misdirected = mdData?.events ?? []
+
+  const tabStyle = (active: boolean) => ({
+    ...MONO,
+    fontSize: 10,
+    letterSpacing: '0.12em',
+    padding: '8px 18px',
+    background: 'transparent',
+    color: active ? '#FFCD32' : '#555',
+    border: 'none',
+    borderBottom: active ? '1px solid #FFCD32' : '1px solid transparent',
+    cursor: 'pointer',
+  } as React.CSSProperties)
 
   return (
     <div style={{ padding: '32px 28px', maxWidth: 1100 }}>
-
-      {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: '#666', marginBottom: 5 }}>
           WEBHOOKS
         </div>
-        <h1 style={{ ...MONO, fontSize: 17, color: '#F5F5F5', letterSpacing: '0.08em' }}>
-          DEAD LETTERS
+        <h1 style={{ ...MONO, fontSize: 17, color: '#F5F5F5', letterSpacing: '0.08em', marginBottom: 20 }}>
+          EVENT LOG
         </h1>
+        <div style={{ display: 'flex', borderBottom: '1px solid #2A2A2A', marginBottom: 24 }}>
+          <button style={tabStyle(tab === 'dead-letters')} onClick={() => setTab('dead-letters')}>
+            DEAD LETTERS
+          </button>
+          <button style={tabStyle(tab === 'misdirected')} onClick={() => setTab('misdirected')}>
+            MISDIRECTED
+          </button>
+        </div>
       </div>
 
-      {error && (
-        <p style={{ ...MONO, fontSize: 11, color: '#EF4444', marginBottom: 16, letterSpacing: '0.08em' }}>
-          {error.message}
-        </p>
+      {tab === 'dead-letters' && (
+        <>
+          {dlError && (
+            <p style={{ ...MONO, fontSize: 11, color: '#EF4444', marginBottom: 16, letterSpacing: '0.08em' }}>
+              {dlError.message}
+            </p>
+          )}
+          <div style={{ border: '1px solid #2A2A2A', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #2A2A2A', background: '#0A0A0A' }}>
+                  {['CALLBACK URL', 'STATUS', 'ATTEMPTS', 'LAST ERROR', 'NEXT RETRY', 'CREATED'].map(h => (
+                    <th key={h} style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: '#888888', padding: '10px 14px', textAlign: 'left', fontWeight: 500 }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {items.map(d => (
+                  <tr key={d.ID} style={{ borderBottom: '1px solid #1A1A1A' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#0F0F0F' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '' }}
+                  >
+                    <td style={{ ...MONO, fontSize: 11, color: '#888888', padding: '14px 14px', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.CallbackURL}>
+                      {d.CallbackURL}
+                    </td>
+                    <td style={{ padding: '14px 14px' }}><StatusBadge status={d.Status} /></td>
+                    <td style={{ padding: '14px 14px' }}>
+                      <div style={{ marginBottom: 5 }}>
+                        <span style={{ ...MONO, fontSize: 14, color: '#F5F5F5' }}>{d.AttemptCount}</span>
+                        <span style={{ ...MONO, fontSize: 10, color: '#888888' }}>/{MAX_ATTEMPTS}</span>
+                      </div>
+                      <div style={{ height: 2, background: '#2A2A2A', width: 48 }}>
+                        <div style={{ height: 2, background: d.AttemptCount >= MAX_ATTEMPTS ? '#EF4444' : '#D97706', width: `${Math.min((d.AttemptCount / MAX_ATTEMPTS) * 100, 100)}%` }} />
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 14px', maxWidth: 340 }}>
+                      {d.LastError ? (
+                        <div style={{ ...MONO, fontSize: 11, color: '#FC8181', lineHeight: 1.55, padding: '5px 8px', background: 'rgba(239,68,68,0.05)', borderLeft: '2px solid #7F1D1D', wordBreak: 'break-word', maxHeight: 64, overflow: 'hidden' }} title={d.LastError}>
+                          {d.LastError}
+                        </div>
+                      ) : <span style={{ ...MONO, fontSize: 11, color: '#555555' }}>—</span>}
+                    </td>
+                    <td style={{ padding: '14px 14px', whiteSpace: 'nowrap' }}>
+                      {d.NextRetryAt ? (
+                        <div>
+                          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: '#FFCD32', marginBottom: 4 }}>SCHEDULED</div>
+                          <div style={{ ...MONO, fontSize: 11, color: '#888888' }}>{new Date(d.NextRetryAt).toLocaleString()}</div>
+                        </div>
+                      ) : <span style={{ ...MONO, fontSize: 11, color: '#555555' }}>—</span>}
+                    </td>
+                    <td style={{ ...MONO, fontSize: 10, color: '#888888', padding: '14px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
+                      {new Date(d.CreatedAt).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+                {!dlLoading && items.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ ...MONO, fontSize: 11, color: '#555555', textAlign: 'center', padding: '52px 16px', letterSpacing: '0.12em' }}>
+                      NO DEAD LETTERS — ALL WEBHOOKS DELIVERED
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            {dlLoading && <div style={{ ...MONO, fontSize: 11, color: '#888888', padding: '12px 14px', letterSpacing: '0.1em' }}>LOADING...</div>}
+          </div>
+        </>
       )}
 
-      <div style={{ border: '1px solid #2A2A2A', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #2A2A2A', background: '#0A0A0A' }}>
-              {['CALLBACK URL', 'STATUS', 'ATTEMPTS', 'LAST ERROR', 'NEXT RETRY', 'CREATED'].map(h => (
-                <th
-                  key={h}
-                  style={{
-                    ...MONO,
-                    fontSize: 9,
-                    letterSpacing: '0.14em',
-                    color: '#888888',
-                    padding: '10px 14px',
-                    textAlign: 'left',
-                    fontWeight: 500,
-                  }}
+      {tab === 'misdirected' && (
+        <div style={{ border: '1px solid #2A2A2A', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #2A2A2A', background: '#0A0A0A' }}>
+                {['TXN REF', 'SIG VALID', 'ERROR', 'RECEIVED'].map(h => (
+                  <th key={h} style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: '#888888', padding: '10px 14px', textAlign: 'left', fontWeight: 500 }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {misdirected.map(e => (
+                <tr key={e.ID} style={{ borderBottom: '1px solid #1A1A1A' }}
+                  onMouseEnter={ev => { ev.currentTarget.style.background = '#0F0F0F' }}
+                  onMouseLeave={ev => { ev.currentTarget.style.background = '' }}
                 >
-                  {h}
-                </th>
+                  <td style={{ ...MONO, fontSize: 11, color: '#888888', padding: '12px 14px' }}>
+                    {e.NombaTxnRef ?? '—'}
+                  </td>
+                  <td style={{ padding: '12px 14px' }}>
+                    <span style={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', color: e.SignatureValid ? '#22c55e' : '#EF4444' }}>
+                      {e.SignatureValid ? 'VALID' : 'INVALID'}
+                    </span>
+                  </td>
+                  <td style={{ ...MONO, fontSize: 11, color: '#FC8181', padding: '12px 14px', maxWidth: 340, wordBreak: 'break-word' }}>
+                    {e.ErrorMessage ?? '—'}
+                  </td>
+                  <td style={{ ...MONO, fontSize: 10, color: '#888888', padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                    {new Date(e.ReceivedAt).toLocaleString()}
+                  </td>
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map(d => (
-              <tr
-                key={d.ID}
-                style={{ borderBottom: '1px solid #1A1A1A' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#0F0F0F' }}
-                onMouseLeave={e => { e.currentTarget.style.background = '' }}
-              >
-                {/* Callback URL */}
-                <td
-                  style={{
-                    ...MONO,
-                    fontSize: 11,
-                    color: '#888888',
-                    padding: '14px 14px',
-                    maxWidth: 180,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                  title={d.CallbackURL}
-                >
-                  {d.CallbackURL}
-                </td>
-
-                {/* Status */}
-                <td style={{ padding: '14px 14px' }}>
-                  <StatusBadge status={d.Status} />
-                </td>
-
-                {/* Attempts */}
-                <td style={{ padding: '14px 14px' }}>
-                  <div style={{ marginBottom: 5 }}>
-                    <span style={{ ...MONO, fontSize: 14, color: '#F5F5F5' }}>{d.AttemptCount}</span>
-                    <span style={{ ...MONO, fontSize: 10, color: '#888888' }}>/{MAX_ATTEMPTS}</span>
-                  </div>
-                  <div style={{ height: 2, background: '#2A2A2A', width: 48 }}>
-                    <div
-                      style={{
-                        height: 2,
-                        background: d.AttemptCount >= MAX_ATTEMPTS ? '#EF4444' : '#D97706',
-                        width: `${Math.min((d.AttemptCount / MAX_ATTEMPTS) * 100, 100)}%`,
-                      }}
-                    />
-                  </div>
-                </td>
-
-                {/* Last Error — hero column */}
-                <td style={{ padding: '14px 14px', maxWidth: 340 }}>
-                  {d.LastError ? (
-                    <div
-                      style={{
-                        ...MONO,
-                        fontSize: 11,
-                        color: '#FC8181',
-                        lineHeight: 1.55,
-                        padding: '5px 8px',
-                        background: 'rgba(239,68,68,0.05)',
-                        borderLeft: '2px solid #7F1D1D',
-                        wordBreak: 'break-word',
-                        maxHeight: 64,
-                        overflow: 'hidden',
-                      }}
-                      title={d.LastError}
-                    >
-                      {d.LastError}
-                    </div>
-                  ) : (
-                    <span style={{ ...MONO, fontSize: 11, color: '#555555' }}>—</span>
-                  )}
-                </td>
-
-                {/* Next Retry */}
-                <td style={{ padding: '14px 14px', whiteSpace: 'nowrap' }}>
-                  {d.NextRetryAt ? (
-                    <div>
-                      <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: '#FFCD32', marginBottom: 4 }}>
-                        SCHEDULED
-                      </div>
-                      <div style={{ ...MONO, fontSize: 11, color: '#888888' }}>
-                        {new Date(d.NextRetryAt).toLocaleString()}
-                      </div>
-                    </div>
-                  ) : (
-                    <span style={{ ...MONO, fontSize: 11, color: '#555555' }}>—</span>
-                  )}
-                </td>
-
-                {/* Created */}
-                <td style={{ ...MONO, fontSize: 10, color: '#888888', padding: '14px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
-                  {new Date(d.CreatedAt).toLocaleString()}
-                </td>
-              </tr>
-            ))}
-
-            {!isLoading && items.length === 0 && (
-              <tr>
-                <td
-                  colSpan={6}
-                  style={{
-                    ...MONO,
-                    fontSize: 11,
-                    color: '#555555',
-                    textAlign: 'center',
-                    padding: '52px 16px',
-                    letterSpacing: '0.12em',
-                  }}
-                >
-                  NO DEAD LETTERS — ALL WEBHOOKS DELIVERED
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-
-        {isLoading && (
-          <div style={{ ...MONO, fontSize: 11, color: '#888888', padding: '12px 14px', letterSpacing: '0.1em' }}>
-            LOADING...
-          </div>
-        )}
-      </div>
+              {!mdLoading && misdirected.length === 0 && (
+                <tr>
+                  <td colSpan={4} style={{ ...MONO, fontSize: 11, color: '#555555', textAlign: 'center', padding: '52px 16px', letterSpacing: '0.12em' }}>
+                    NO MISDIRECTED PAYMENTS
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {mdLoading && <div style={{ ...MONO, fontSize: 11, color: '#888888', padding: '12px 14px', letterSpacing: '0.1em' }}>LOADING...</div>}
+        </div>
+      )}
     </div>
   )
 }
