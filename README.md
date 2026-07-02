@@ -19,14 +19,6 @@ Built for the **Nomba x DevCareer Hackathon 2026, Infrastructure Track**.
 ---
 
 
-
-Architecture walkthrough — trace every request path end to end, identify any gaps or assumptions that could break under load
-Security audit — go through each invariant in CLAUDE.md and verify the code actually enforces it
-Edge case inventory — what happens when Nomba is down, token expires mid-request, concurrent writes hit the same VA, webhook arrives for an expired account
-Chaos test design — map out exactly what to run tomorrow morning before the transfer test
-Submission framing — make sure the README and any write-up hits all 5 rubric criteria with evidence from the actual code
-
-
 ## Architecture
 
 <!-- System design diagram goes here -->
