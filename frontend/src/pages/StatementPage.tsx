@@ -40,7 +40,7 @@ export default function StatementPage() {
   const lines = data?.pages.flatMap(p => p.lines) ?? []
 
   if (isLoading) return (
-    <div style={{ ...MONO, padding: 28, fontSize: 11, color: '#3A3A3A', letterSpacing: '0.12em' }}>
+    <div style={{ ...MONO, padding: 28, fontSize: 11, color: '#888888', letterSpacing: '0.12em' }}>
       LOADING...
     </div>
   )
@@ -59,21 +59,21 @@ export default function StatementPage() {
         style={{
           ...MONO,
           fontSize: 10,
-          color: '#3A3A3A',
+          color: '#888888',
           textDecoration: 'none',
           letterSpacing: '0.12em',
           display: 'inline-block',
           marginBottom: 28,
         }}
         onMouseEnter={e => { e.currentTarget.style.color = '#FFCD32' }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#3A3A3A' }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#888888' }}
       >
         ← {accountRef}
       </Link>
 
       {/* Title */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: '#333', marginBottom: 5 }}>
+        <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: '#666', marginBottom: 5 }}>
           {accountRef}
         </div>
         <h1 style={{ ...MONO, fontSize: 17, color: '#F5F5F5', letterSpacing: '0.08em' }}>STATEMENT</h1>
@@ -89,7 +89,7 @@ export default function StatementPage() {
             ['OPENING BALANCE', summary.openingBalance,  '#5A5A5A'],
           ] as [string, string, string][]).map(([label, value, color]) => (
             <div key={label} style={{ background: '#111', padding: '14px 16px' }}>
-              <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: '#3A3A3A', marginBottom: 8 }}>
+              <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: '#888888', marginBottom: 8 }}>
                 {label}
               </div>
               <div style={{ ...MONO, fontSize: 14, color, fontWeight: 500 }}>
@@ -112,7 +112,7 @@ export default function StatementPage() {
                     ...MONO,
                     fontSize: 9,
                     letterSpacing: '0.14em',
-                    color: '#3A3A3A',
+                    color: '#888888',
                     padding: '10px 14px',
                     textAlign: align,
                     fontWeight: 500,
@@ -147,12 +147,12 @@ export default function StatementPage() {
                   </td>
 
                   {/* Fee */}
-                  <td style={{ ...MONO, fontSize: 11, color: '#3A3A3A', padding: '10px 14px', textAlign: 'right' }}>
+                  <td style={{ ...MONO, fontSize: 11, color: '#888888', padding: '10px 14px', textAlign: 'right' }}>
                     {parseFloat(entry.Fee) > 0 ? ngn(entry.Fee) : '—'}
                   </td>
 
                   {/* Running balance */}
-                  <td style={{ ...MONO, fontSize: 12, color: '#6B6B6B', padding: '10px 14px', textAlign: 'right' }}>
+                  <td style={{ ...MONO, fontSize: 12, color: '#888888', padding: '10px 14px', textAlign: 'right' }}>
                     {ngn(runningBalance)}
                   </td>
 
@@ -165,7 +165,7 @@ export default function StatementPage() {
                   <td
                     style={{
                       fontSize: 11,
-                      color: '#5A5A5A',
+                      color: '#888888',
                       padding: '10px 14px',
                       maxWidth: 180,
                       overflow: 'hidden',
@@ -179,7 +179,7 @@ export default function StatementPage() {
                   </td>
 
                   {/* Date */}
-                  <td style={{ ...MONO, fontSize: 10, color: '#3A3A3A', padding: '10px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
+                  <td style={{ ...MONO, fontSize: 10, color: '#888888', padding: '10px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
                     {new Date(entry.CreatedAt).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </td>
                 </tr>
@@ -192,7 +192,7 @@ export default function StatementPage() {
                   style={{
                     ...MONO,
                     fontSize: 11,
-                    color: '#2A2A2A',
+                    color: '#555555',
                     textAlign: 'center',
                     padding: '52px 16px',
                     letterSpacing: '0.12em',

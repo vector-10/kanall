@@ -4,7 +4,7 @@ import { api } from '../api'
 import type { Account, AccountsResponse } from '../api'
 import StatusBadge from '../components/StatusBadge'
 
-type LifecycleAction = 'suspend' | 'expire' | 'reactivate'
+type LifecycleAction = 'expire'
 
 interface ActionDef {
   action: LifecycleAction
@@ -15,14 +15,7 @@ interface ActionDef {
 }
 
 const ACTIONS: Record<string, ActionDef[]> = {
-  active: [
-    { action: 'suspend',    label: 'SUSPEND',    color: '#D97706', borderColor: '#78350F' },
-    { action: 'expire',     label: 'EXPIRE',     color: '#EF4444', borderColor: '#7F1D1D' },
-  ],
-  suspended: [
-    { action: 'reactivate', label: 'REACTIVATE', color: '#0D0D0D', borderColor: '#FFCD32', filled: true },
-    { action: 'expire',     label: 'EXPIRE',     color: '#EF4444', borderColor: '#7F1D1D' },
-  ],
+  active:  [{ action: 'expire', label: 'EXPIRE', color: '#EF4444', borderColor: '#7F1D1D' }],
   expired: [],
 }
 
@@ -47,21 +40,17 @@ export default function AccountDetailPage() {
     queryClient.invalidateQueries({ queryKey: ['accounts'] })
   }
 
-  const suspendMutation    = useMutation({ mutationFn: () => api.accounts.suspend(accountRef!),    onSuccess })
-  const expireMutation     = useMutation({ mutationFn: () => api.accounts.expire(accountRef!),     onSuccess })
-  const reactivateMutation = useMutation({ mutationFn: () => api.accounts.reactivate(accountRef!), onSuccess })
+  const expireMutation = useMutation({ mutationFn: () => api.accounts.expire(accountRef!), onSuccess })
 
-  const mutations: Record<LifecycleAction, typeof suspendMutation> = {
-    suspend: suspendMutation,
+  const mutations: Record<LifecycleAction, typeof expireMutation> = {
     expire: expireMutation,
-    reactivate: reactivateMutation,
   }
 
   const acting = Object.values(mutations).some(m => m.isPending)
   const actionError = Object.values(mutations).find(m => m.error)?.error?.message
 
   if (isLoading) return (
-    <div style={{ ...MONO, padding: 28, fontSize: 11, color: '#3A3A3A', letterSpacing: '0.12em' }}>
+    <div style={{ ...MONO, padding: 28, fontSize: 11, color: '#888888', letterSpacing: '0.12em' }}>
       LOADING...
     </div>
   )
@@ -93,14 +82,14 @@ export default function AccountDetailPage() {
         style={{
           ...MONO,
           fontSize: 10,
-          color: '#3A3A3A',
+          color: '#888888',
           textDecoration: 'none',
           letterSpacing: '0.12em',
           display: 'inline-block',
           marginBottom: 28,
         }}
         onMouseEnter={e => { e.currentTarget.style.color = '#FFCD32' }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#3A3A3A' }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#888888' }}
       >
         ← ACCOUNTS
       </Link>
@@ -111,7 +100,7 @@ export default function AccountDetailPage() {
           <h1 style={{ ...MONO, fontSize: 20, color: '#FFCD32', letterSpacing: '0.06em', marginBottom: 6 }}>
             {account.AccountRef}
           </h1>
-          <span style={{ ...MONO, fontSize: 9, color: '#3A3A3A', letterSpacing: '0.16em' }}>
+          <span style={{ ...MONO, fontSize: 9, color: '#888888', letterSpacing: '0.16em' }}>
             {account.Provider.toUpperCase()}
           </span>
         </div>
@@ -135,7 +124,7 @@ export default function AccountDetailPage() {
               ...MONO,
               fontSize: 9,
               letterSpacing: '0.14em',
-              color: '#3A3A3A',
+              color: '#888888',
               width: 140,
               flexShrink: 0,
               paddingTop: 1,
@@ -145,7 +134,7 @@ export default function AccountDetailPage() {
             <span style={{
               fontFamily: mono ? 'var(--font-mono)' : 'var(--font-sans)',
               fontSize: 12,
-              color: value ? '#C0C0C0' : '#2A2A2A',
+              color: value ? '#C0C0C0' : '#555555',
               letterSpacing: mono ? '0.06em' : 0,
               wordBreak: 'break-all',
             }}>

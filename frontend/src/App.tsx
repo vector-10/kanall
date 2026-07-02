@@ -1,4 +1,4 @@
-import { Outlet, BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Outlet, BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Layout from './components/Layout'
 import LandingPage from './pages/LandingPage'
@@ -21,6 +21,7 @@ function DashboardLayout({ onLogout }: { onLogout: () => void }) {
 
 function AppRoutes() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   const { data: me, isLoading } = useQuery({
     queryKey: ['me'],
@@ -41,6 +42,7 @@ function AppRoutes() {
       await api.auth.logout()
     } finally {
       queryClient.clear()
+      navigate('/login', { replace: true })
     }
   }
 

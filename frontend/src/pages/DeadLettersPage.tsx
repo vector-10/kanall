@@ -18,7 +18,7 @@ export default function DeadLettersPage() {
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: '#333', marginBottom: 5 }}>
+        <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: '#666', marginBottom: 5 }}>
           WEBHOOKS
         </div>
         <h1 style={{ ...MONO, fontSize: 17, color: '#F5F5F5', letterSpacing: '0.08em' }}>
@@ -43,7 +43,7 @@ export default function DeadLettersPage() {
                     ...MONO,
                     fontSize: 9,
                     letterSpacing: '0.14em',
-                    color: '#3A3A3A',
+                    color: '#888888',
                     padding: '10px 14px',
                     textAlign: 'left',
                     fontWeight: 500,
@@ -67,7 +67,7 @@ export default function DeadLettersPage() {
                   style={{
                     ...MONO,
                     fontSize: 11,
-                    color: '#5A5A5A',
+                    color: '#888888',
                     padding: '14px 14px',
                     maxWidth: 180,
                     overflow: 'hidden',
@@ -88,7 +88,7 @@ export default function DeadLettersPage() {
                 <td style={{ padding: '14px 14px' }}>
                   <div style={{ marginBottom: 5 }}>
                     <span style={{ ...MONO, fontSize: 14, color: '#F5F5F5' }}>{d.AttemptCount}</span>
-                    <span style={{ ...MONO, fontSize: 10, color: '#3A3A3A' }}>/{MAX_ATTEMPTS}</span>
+                    <span style={{ ...MONO, fontSize: 10, color: '#888888' }}>/{MAX_ATTEMPTS}</span>
                   </div>
                   <div style={{ height: 2, background: '#2A2A2A', width: 48 }}>
                     <div
@@ -122,7 +122,7 @@ export default function DeadLettersPage() {
                       {d.LastError}
                     </div>
                   ) : (
-                    <span style={{ ...MONO, fontSize: 11, color: '#2A2A2A' }}>—</span>
+                    <span style={{ ...MONO, fontSize: 11, color: '#555555' }}>—</span>
                   )}
                 </td>
 
@@ -133,17 +133,17 @@ export default function DeadLettersPage() {
                       <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: '#FFCD32', marginBottom: 4 }}>
                         SCHEDULED
                       </div>
-                      <div style={{ ...MONO, fontSize: 11, color: '#6B6B6B' }}>
+                      <div style={{ ...MONO, fontSize: 11, color: '#888888' }}>
                         {new Date(d.NextRetryAt).toLocaleString()}
                       </div>
                     </div>
                   ) : (
-                    <span style={{ ...MONO, fontSize: 11, color: '#2A2A2A' }}>—</span>
+                    <span style={{ ...MONO, fontSize: 11, color: '#555555' }}>—</span>
                   )}
                 </td>
 
                 {/* Created */}
-                <td style={{ ...MONO, fontSize: 10, color: '#3A3A3A', padding: '14px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
+                <td style={{ ...MONO, fontSize: 10, color: '#888888', padding: '14px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
                   {new Date(d.CreatedAt).toLocaleString()}
                 </td>
               </tr>
@@ -156,7 +156,7 @@ export default function DeadLettersPage() {
                   style={{
                     ...MONO,
                     fontSize: 11,
-                    color: '#2A2A2A',
+                    color: '#555555',
                     textAlign: 'center',
                     padding: '52px 16px',
                     letterSpacing: '0.12em',
@@ -170,7 +170,7 @@ export default function DeadLettersPage() {
         </table>
 
         {isLoading && (
-          <div style={{ ...MONO, fontSize: 11, color: '#3A3A3A', padding: '12px 14px', letterSpacing: '0.1em' }}>
+          <div style={{ ...MONO, fontSize: 11, color: '#888888', padding: '12px 14px', letterSpacing: '0.1em' }}>
             LOADING...
           </div>
         )}
