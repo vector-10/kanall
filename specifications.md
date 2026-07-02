@@ -20,7 +20,7 @@ kanall is domain-blind by design. It has no opinion about what kind of business 
 
 | Layer | Package | Responsibility |
 |---|---|---|
-| Entrypoint | `cmd/server` | Config, DB pool, Fiber app, graceful shutdown |
+| Entrypoint | `cmd/server` | Config, DB pool, chi router, graceful shutdown |
 | Handler | `internal/handler` | HTTP parsing, response formatting, route registration |
 | Middleware | `internal/middleware` | Rate limiting, tenant auth, request ID, logging |
 | Service | `internal/service` | Business logic, orchestration |
@@ -46,10 +46,9 @@ Expire(ctx, accountRef) → error
 FetchTransactions(ctx, accountRef) → []Transaction
 ```
 
-Two implementations exist:
+One production implementation exists:
 
-- **NombaProvider** — calls the real Nomba REST API. Manages token lifecycle: acquires a client-credentials token on first call, caches it, and refreshes 5 minutes before expiry.
-- **MockProvider** — in-memory fake backed by a mutex-protected map. Generates fake NUBANs. Supports all interface methods plus `SeedTransaction` for testing. The server falls back to MockProvider when Nomba credentials are absent.
+- **NombaProvider** — calls the real Nomba REST API (`https://api.nomba.com`). Manages token lifecycle: acquires a client-credentials token (`grant_type: client_credentials`) on first call, caches it, and refreshes 5 minutes before expiry using `grant_type: refresh_token`.
 
 Services depend on the interface, never on a concrete implementation. Swapping the payment rail requires only a new struct that satisfies the interface.
 
@@ -68,11 +67,11 @@ The top-level entity. Every provisioned account, customer, and ledger entry belo
 | name | VARCHAR | Business name |
 | email | VARCHAR | Unique, nullable for legacy rows |
 | api_key_hash | VARCHAR | SHA-256 hash of the raw API key |
-| status | VARCHAR | `active` or `suspended` |
+| status | VARCHAR | `active`, `pending_verification`, or `suspended` |
 | created_at | TIMESTAMPTZ | |
 | updated_at | TIMESTAMPTZ | |
 
-The raw API key is never stored. It is generated once on registration and shown to the tenant once. Only the hash lives in the database.
+The raw API key is never stored. It is generated on registration (after OTP verification) and shown exactly once. Only the SHA-256 hash lives in the database. Session tokens follow the same pattern: raw token in cookie only, hash stored in DB.
 
 ### customers
 A customer is an end user of the tenant — the person whose money moves. kanall stores only what is needed for attribution.
@@ -103,7 +102,7 @@ One virtual account per customer per tenant. Maps Nomba's account reference to k
 | bank_account_name | VARCHAR | |
 | bank_name | VARCHAR | |
 | currency | VARCHAR | `NGN` |
-| status | VARCHAR | `active`, `suspended`, or `expired` |
+| status | VARCHAR | `active` or `expired` |
 | callback_url | TEXT | Optional per-account webhook URL |
 
 ### ledger_entries
@@ -132,15 +131,15 @@ Every payment posts two rows with the same `transaction_group_id`:
 The sum of amounts across any group is always zero.
 
 ### processed_events
-The idempotency gate. One row per Nomba transaction reference.
+The idempotency gate. One row per Nomba webhook event.
 
 | Column | Type | Notes |
 |---|---|---|
-| nomba_txn_ref | VARCHAR | Primary key |
+| request_id | VARCHAR | Primary key — `requestId` field from the Nomba webhook payload |
 | transaction_group_id | UUID | The ledger group this event produced |
 | created_at | TIMESTAMPTZ | |
 
-This INSERT and the ledger write happen in the same database transaction. If the INSERT hits a conflict (duplicate key), the ledger write does not happen and the webhook returns 200 immediately.
+This INSERT and the two ledger entry INSERTs happen in the same database transaction. If the INSERT hits a conflict (duplicate `requestId`), the ledger write does not happen and the webhook handler returns 200 immediately. `requestId` is preferred over `transactionId` because Nomba can send the same payment event multiple times with different transaction references but the same request ID.
 
 ### webhook_events
 Audit log of every inbound webhook payload.
@@ -174,11 +173,13 @@ Append-only audit log of every status change on a virtual account.
 ## 5. Core flows
 
 ### Tenant registration
-1. `POST /register` with `{ name, email }`
-2. Server generates 32 random bytes → hex string (64 chars) as the raw API key
-3. SHA-256 hash of the raw key is stored in `tenants.api_key_hash`
-4. Raw key is returned in the response exactly once with a warning
-5. All subsequent requests authenticate by sending the raw key in `X-API-Key`; the middleware hashes it and looks up the tenant
+1. `POST /register` with `{ name, email, password }` — creates a `pending_verification` tenant and sends a 6-digit OTP to the email address
+2. `POST /auth/verify-email` with `{ tenantId, otp }` — verifies OTP, activates tenant, generates API key and session token
+3. Server generates 32 random bytes → hex string (64 chars) as the raw API key; SHA-256 hash stored in `tenants.api_key_hash`
+4. Session token: raw token set in `HttpOnly` cookie, SHA-256 hash stored in `sessions` table
+5. Raw API key is returned in the response exactly once
+6. All subsequent API requests authenticate by sending the raw key in `X-API-Key`; the middleware hashes it and looks up the tenant
+7. Dashboard requests authenticate via the session cookie
 
 ### Virtual account provisioning
 1. Tenant sends `POST /v1/accounts` with `{ externalRef, name, bvn?, callbackUrl? }`
@@ -189,13 +190,14 @@ Append-only audit log of every status change on a virtual account.
 6. If a concurrent request created the same customer (unique constraint on `externalRef`), the race is caught by detecting `pgconn error 23505` and re-fetching
 
 ### Inbound payment (webhook path)
-1. Nomba sends `POST /webhooks/nomba` with a signed payload
-2. Signature is verified with HMAC-SHA256 against `NOMBA_WEBHOOKS_SIGNING_SECRET`; invalid signature → `dead_letter`
-3. Webhook event is persisted regardless of signature validity
-4. If event type is not `credit`, the event is marked `processed` and discarded
-5. `processed_events` INSERT is attempted in the same DB transaction as the two `ledger_entries` INSERTs
+1. Nomba sends `POST /webhooks/nomba` with headers `nomba-signature` and `nomba-timestamp`
+2. Signature is verified by building the 9-field colon-separated signed string: `{event_type}:{requestId}:{merchant.userId}:{merchant.walletId}:{transactionId}:{type}:{time}:{responseCode}:{nomba-timestamp}`, then computing HMAC-SHA256 and base64-encoding the result. Comparison uses `hmac.Equal` (constant-time). Invalid signature → `dead_letter`. **Kanall always returns 200** regardless of outcome — a non-200 would cause Nomba to retry indefinitely.
+3. Webhook event is persisted to `webhook_events` regardless of signature validity
+4. If event type is not `vact_transfer`, the event is marked `processed` and discarded
+5. `processed_events` INSERT (keyed on `requestId`) is attempted in the same DB transaction as the two `ledger_entries` INSERTs
 6. If the INSERT hits a conflict → already processed → return 200 without re-posting
-7. Permanent failures (bad amount, unknown account ref) → `dead_letter`; transient failures → `failed`
+7. Permanent failures (unknown account ref, missing requestId) → `dead_letter`; transient failures → `failed`
+8. If the virtual account has a `callbackUrl`, a `tenant_webhook_deliveries` row is enqueued for outbound delivery
 
 ### Convergence sweep
 Runs on a background goroutine every `CONVERGENCE_SWEEP_INTERVAL_SECONDS` seconds.
@@ -227,9 +229,11 @@ These must never be broken:
 | Concern | Mechanism |
 |---|---|
 | Tenant authentication | SHA-256 hash of raw API key, constant-time comparison via `hmac.Equal` |
-| Webhook authenticity | HMAC-SHA256 signature on raw body, `X-Nomba-Signature` header |
-| BVN storage | AES-256-GCM encryption, random nonce per ciphertext, key from environment |
-| Rate limiting | 100 requests per minute per API key, falls back to IP |
+| Session authentication | Raw token in `HttpOnly` cookie only; SHA-256 hash stored in DB |
+| Webhook authenticity | HMAC-SHA256 of 9-field colon-separated string, `nomba-signature` + `nomba-timestamp` headers, base64 output |
+| BVN storage | AES-256-GCM encryption, random nonce per ciphertext, key from `ENCRYPTION_KEY` env only |
+| Password storage | bcrypt |
+| Rate limiting | Per-route: 5/min registration, 10/min login, 20/min account writes, 100/min reads |
 | SQL injection | Parameterised queries throughout via `pgx` |
 
 ---
@@ -346,9 +350,7 @@ See `.env.example` for the full list.
 | `air` | Live reload during development |
 | `golang-migrate` | Database migrations |
 | `go test ./...` | Unit test suite |
-| `cmd/chaos` | Webhook stress harness — sends concurrent signed webhooks to test idempotency and throughput under load |
-| `MockProvider` | In-memory provider for running without Nomba credentials |
+| `cmd/chaos` | Webhook stress harness — 4 scenarios: flood (249 RPS), idempotency storm (10 concurrent dupes), invalid signature handling, provisioning race (10 concurrent same externalRef) |
 
 ---
 
-*This document will be expanded with sequence diagrams, performance benchmarks, and a production deployment guide.*
