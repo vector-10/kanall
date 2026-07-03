@@ -74,7 +74,7 @@ func (s *ConvergenceService) sweep(ctx context.Context) error {
 			if err := s.store.Ledger.ConfirmByTxnRef(ctx, e.NombaTxnRef); err != nil {
 				log.Printf("convergence: confirm failed for txn %s: %v", e.NombaTxnRef, err)
 			}
-		} else if time.Since(e.CreatedAt) > 5*time.Minute {
+		} else if time.Since(e.CreatedAt) > 24*time.Hour {
 			s.postReversal(ctx, e)
 		}
 	}
