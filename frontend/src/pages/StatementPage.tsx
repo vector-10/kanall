@@ -37,7 +37,7 @@ export default function StatementPage() {
     })
 
   const summary = data?.pages[0]
-  const lines = data?.pages.flatMap(p => p.lines) ?? []
+  const lines = data?.pages.flatMap(p => p.lines ?? []) ?? []
 
   if (isLoading) return (
     <div style={{ ...MONO, padding: 28, fontSize: 11, color: '#888888', letterSpacing: '0.12em' }}>

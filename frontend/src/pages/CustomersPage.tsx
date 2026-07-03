@@ -47,7 +47,7 @@ export default function CustomersPage() {
       last.pagination.hasMore ? (last.pagination.nextCursor ?? undefined) : undefined,
   })
 
-  const customers = data?.pages.flatMap(p => p.customers) ?? []
+  const customers = data?.pages.flatMap(p => p.customers ?? []) ?? []
 
   if (isLoading) return (
     <div style={{ ...MONO, padding: 28, fontSize: 11, color: '#888888', letterSpacing: '0.12em' }}>

@@ -36,7 +36,7 @@ export default function AccountDetailPage() {
     enabled: !!accountRef,
     placeholderData: () => {
       const cached = queryClient.getQueryData<{ pages: AccountsResponse[] }>(['accounts'])
-      return cached?.pages.flatMap(p => p.accounts).find(a => a.AccountRef === accountRef)
+      return cached?.pages.flatMap(p => p.accounts ?? []).find(a => a.AccountRef === accountRef)
     },
   })
 
