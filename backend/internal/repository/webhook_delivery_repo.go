@@ -49,11 +49,12 @@ func (r *WebhookDeliveryRepo) UpdateAfterAttempt(ctx context.Context, id uuid.UU
 		    last_error    = $3,
 		    next_retry_at = $4,
 		    attempt_count = attempt_count + 1,
-		    delivered_at  = CASE WHEN $2 = 'delivered' THEN now() ELSE NULL END
+		    delivered_at  = CASE WHEN $5 = 'delivered' THEN now() ELSE NULL END
 		WHERE id = $1
-	`, id, status, lastError, nextRetryAt)
+	`, id, status, lastError, nextRetryAt, status)
 	return err
 }
+
 
 func (r *WebhookDeliveryRepo) ListDeadLetters(ctx context.Context, tenantID uuid.UUID) ([]model.TenantWebhookDelivery, error) {
 	rows, err := r.pool.Query(ctx, `

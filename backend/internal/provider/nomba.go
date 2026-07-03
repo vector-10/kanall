@@ -217,18 +217,18 @@ func (n *NombaProvider) Provision(ctx context.Context, customer Customer) (Virtu
 		"bvn":         customer.BVN,
 	}
 	if customer.ExpectedAmount != nil {
-		// Nomba expects amount in kobo
 		reqBody["expectedAmount"] = int64(*customer.ExpectedAmount * 100)
 	}
 
-	resp, err := n.doRequest(ctx, http.MethodPost, "/v1/accounts/virtual", reqBody)
+	resp, err := n.doRequest(ctx, http.MethodPost, "/v1/accounts/virtual/"+n.cfg.NombaSubAccountID, reqBody)
 	if err != nil {
 		return VirtualAccount{}, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return VirtualAccount{}, fmt.Errorf("nomba provision failed: status %d", resp.StatusCode)
+		rb, _ := io.ReadAll(resp.Body)
+		return VirtualAccount{}, fmt.Errorf("nomba provision failed: status %d: %s", resp.StatusCode, rb)
 	}
 
 	var r nombaVAResponse
@@ -269,7 +269,6 @@ func (n *NombaProvider) Update(ctx context.Context, accountRef string, updates A
 		return VirtualAccount{}, fmt.Errorf("nomba update failed: status %d", resp.StatusCode)
 	}
 
-	// PUT returns only {"data": {"updated": true}} — fetch current state
 	return n.Fetch(ctx, accountRef)
 }
 

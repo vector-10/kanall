@@ -17,7 +17,6 @@ import (
 	"github.com/vector-10/kanall/internal/repository"
 )
 
-// permanentErr marks failures that retrying will never fix
 type permanentErr struct{ cause error }
 
 func (e *permanentErr) Error() string { return e.cause.Error() }
@@ -42,15 +41,15 @@ type webhookPayload struct {
 			WalletID string `json:"walletId"`
 		} `json:"merchant"`
 		Transaction struct {
-			TransactionID         string  `json:"transactionId"`
-			Type                  string  `json:"type"`
-			Time                  string  `json:"time"`
-			ResponseCode          string  `json:"responseCode"`
-			TransactionAmount     int64       `json:"transactionAmount"`
+			TransactionID         string      `json:"transactionId"`
+			Type                  string      `json:"type"`
+			Time                  string      `json:"time"`
+			ResponseCode          string      `json:"responseCode"`
+			TransactionAmount     json.Number `json:"transactionAmount"`
 			Fee                   json.Number `json:"fee"`
-			Currency              string  `json:"currency"`
-			AliasAccountReference string  `json:"aliasAccountReference"`
-			Narration             string  `json:"narration"`
+			Currency              string      `json:"currency"`
+			AliasAccountReference string      `json:"aliasAccountReference"`
+			Narration             string      `json:"narration"`
 		} `json:"transaction"`
 		Customer struct {
 			SenderName    string `json:"senderName"`
@@ -63,6 +62,7 @@ type webhookPayload struct {
 func (s *ReconciliationService) HandleWebhook(ctx context.Context, rawBody []byte, signature, timestamp string) error {
 	var payload webhookPayload
 	if err := json.Unmarshal(rawBody, &payload); err != nil {
+		log.Printf("webhook: JSON parse error: %v", err)
 		event := &model.WebhookEvent{
 			ID:             uuid.New(),
 			PayloadRaw:     rawBody,
@@ -159,8 +159,13 @@ func isMisdirected(err error) bool {
 }
 
 func (s *ReconciliationService) postEntries(ctx context.Context, payload webhookPayload) error {
-	amountNGN := decimal.NewFromInt(payload.Data.Transaction.TransactionAmount).Div(decimal.NewFromInt(100))
+	amountNGN, _ := decimal.NewFromString(payload.Data.Transaction.TransactionAmount.String())
 	feeNGN, _ := decimal.NewFromString(payload.Data.Transaction.Fee.String())
+
+	currency := payload.Data.Transaction.Currency
+	if currency == "" {
+		currency = "NGN"
+	}
 
 	accountRef := payload.Data.Transaction.AliasAccountReference
 	va, err := s.store.Accounts.GetByAccountRefGlobal(ctx, accountRef)
@@ -187,7 +192,7 @@ func (s *ReconciliationService) postEntries(ctx context.Context, payload webhook
 		Direction:          "credit",
 		Amount:             amountNGN,
 		Fee:                feeNGN,
-		Currency:           payload.Data.Transaction.Currency,
+		Currency:           currency,
 		Status:             "provisional",
 		Narration:          &narration,
 	}
@@ -202,7 +207,7 @@ func (s *ReconciliationService) postEntries(ctx context.Context, payload webhook
 		Direction:          "debit",
 		Amount:             amountNGN,
 		Fee:                feeNGN,
-		Currency:           payload.Data.Transaction.Currency,
+		Currency:           currency,
 		Status:             "provisional",
 		Narration:          &narration,
 	}
@@ -226,7 +231,7 @@ func (s *ReconciliationService) postEntries(ctx context.Context, payload webhook
 			"transactionGroupId": groupID.String(),
 			"accountRef":         accountRef,
 			"amount":             amountNGN,
-			"currency":           payload.Data.Transaction.Currency,
+			"currency":           currency,
 			"senderName":         payload.Data.Customer.SenderName,
 			"narration":          payload.Data.Transaction.Narration,
 			"status":             "provisional",
