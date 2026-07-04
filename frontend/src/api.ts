@@ -59,6 +59,7 @@ export interface Customer {
   BVNLast4: string | null
   NINLast4: string | null
   KYCTier: number
+  KYCStatus: string
   Status: string
   CreatedAt: string
   UpdatedAt: string
@@ -210,8 +211,14 @@ export const api = {
     patch: (id: string, body: { name: string }) =>
       request<Customer>('PATCH', `/v1/customers/${id}`, body),
 
-    upgradeKYC: (id: string, nin: string) =>
-      request<Customer>('POST', `/v1/customers/${id}/kyc`, { nin }),
+    upgradeKYC: (id: string, nin: string, ninDocument: string) =>
+      request<Customer>('POST', `/v1/customers/${id}/kyc`, { nin, nin_document: ninDocument }),
+
+    approveKYC: (id: string) =>
+      request<Customer>('POST', `/auth/customers/${id}/kyc/approve`),
+
+    rejectKYC: (id: string) =>
+      request<Customer>('POST', `/auth/customers/${id}/kyc/reject`),
   },
 
   webhooks: {
