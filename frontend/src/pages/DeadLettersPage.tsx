@@ -25,28 +25,23 @@ export default function DeadLettersPage() {
   const items = dlData?.deadLetters ?? []
   const misdirected = mdData?.events ?? []
 
-  const tabStyle = (active: boolean) => ({
-    ...MONO,
-    fontSize: 10,
-    letterSpacing: '0.12em',
-    padding: '8px 18px',
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '8px 18px',
     background: 'transparent',
-    color: active ? '#FFCD32' : '#555',
+    color: active ? 'var(--accent)' : 'var(--text-muted)',
     border: 'none',
-    borderBottom: active ? '1px solid #FFCD32' : '1px solid transparent',
+    borderBottom: active ? '1px solid var(--accent)' : '1px solid transparent',
     cursor: 'pointer',
-  } as React.CSSProperties)
+  })
 
   return (
-    <div style={{ padding: '32px 28px', maxWidth: 1100 }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: '#666', marginBottom: 5 }}>
-          WEBHOOKS
-        </div>
-        <h1 style={{ ...MONO, fontSize: 17, color: '#F5F5F5', letterSpacing: '0.08em', marginBottom: 20 }}>
-          EVENT LOG
-        </h1>
-        <div style={{ display: 'flex', borderBottom: '1px solid #2A2A2A', marginBottom: 24 }}>
+    <div style={{ padding: '32px 36px' }}>
+
+      {/* Header */}
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 5 }}>WEBHOOKS</div>
+        <h1 style={{ ...MONO, fontSize: 17, color: 'var(--text)', letterSpacing: '0.08em', marginBottom: 20 }}>MONITORING</h1>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
           <button style={tabStyle(tab === 'dead-letters')} onClick={() => setTab('dead-letters')}>
             DEAD LETTERS
           </button>
@@ -59,16 +54,16 @@ export default function DeadLettersPage() {
       {tab === 'dead-letters' && (
         <>
           {dlError && (
-            <p style={{ ...MONO, fontSize: 11, color: '#EF4444', marginBottom: 16, letterSpacing: '0.08em' }}>
+            <p style={{ ...MONO, fontSize: 11, color: 'var(--red)', marginBottom: 16, letterSpacing: '0.08em' }}>
               {dlError.message}
             </p>
           )}
-          <div style={{ border: '1px solid #2A2A2A', overflow: 'hidden' }}>
+          <div style={{ border: '1px solid var(--border)', overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #2A2A2A', background: '#0A0A0A' }}>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-raised)' }}>
                   {['CALLBACK URL', 'STATUS', 'ATTEMPTS', 'LAST ERROR', 'NEXT RETRY', 'CREATED'].map(h => (
-                    <th key={h} style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: '#888888', padding: '10px 14px', textAlign: 'left', fontWeight: 500 }}>
+                    <th key={h} style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-muted)', padding: '10px 14px', textAlign: 'left', fontWeight: 500 }}>
                       {h}
                     </th>
                   ))}
@@ -76,64 +71,64 @@ export default function DeadLettersPage() {
               </thead>
               <tbody>
                 {items.map(d => (
-                  <tr key={d.ID} style={{ borderBottom: '1px solid #1A1A1A' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#0F0F0F' }}
+                  <tr key={d.ID} style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-raised)' }}
                     onMouseLeave={e => { e.currentTarget.style.background = '' }}
                   >
-                    <td style={{ ...MONO, fontSize: 11, color: '#888888', padding: '14px 14px', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.CallbackURL}>
+                    <td style={{ ...MONO, fontSize: 11, color: 'var(--text-muted)', padding: '14px 14px', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.CallbackURL}>
                       {d.CallbackURL}
                     </td>
                     <td style={{ padding: '14px 14px' }}><StatusBadge status={d.Status} /></td>
                     <td style={{ padding: '14px 14px' }}>
                       <div style={{ marginBottom: 5 }}>
-                        <span style={{ ...MONO, fontSize: 14, color: '#F5F5F5' }}>{d.AttemptCount}</span>
-                        <span style={{ ...MONO, fontSize: 10, color: '#888888' }}>/{MAX_ATTEMPTS}</span>
+                        <span style={{ ...MONO, fontSize: 14, color: 'var(--text)' }}>{d.AttemptCount}</span>
+                        <span style={{ ...MONO, fontSize: 10, color: 'var(--text-muted)' }}>/{MAX_ATTEMPTS}</span>
                       </div>
-                      <div style={{ height: 2, background: '#2A2A2A', width: 48 }}>
-                        <div style={{ height: 2, background: d.AttemptCount >= MAX_ATTEMPTS ? '#EF4444' : '#D97706', width: `${Math.min((d.AttemptCount / MAX_ATTEMPTS) * 100, 100)}%` }} />
+                      <div style={{ height: 2, background: 'var(--border)', width: 48 }}>
+                        <div style={{ height: 2, background: d.AttemptCount >= MAX_ATTEMPTS ? 'var(--red)' : '#D97706', width: `${Math.min((d.AttemptCount / MAX_ATTEMPTS) * 100, 100)}%` }} />
                       </div>
                     </td>
                     <td style={{ padding: '14px 14px', maxWidth: 340 }}>
                       {d.LastError ? (
-                        <div style={{ ...MONO, fontSize: 11, color: '#FC8181', lineHeight: 1.55, padding: '5px 8px', background: 'rgba(239,68,68,0.05)', borderLeft: '2px solid #7F1D1D', wordBreak: 'break-word', maxHeight: 64, overflow: 'hidden' }} title={d.LastError}>
+                        <div style={{ ...MONO, fontSize: 11, color: 'var(--red)', lineHeight: 1.55, padding: '5px 8px', background: 'var(--red-bg)', borderLeft: '2px solid var(--red)', wordBreak: 'break-word', maxHeight: 64, overflow: 'hidden' }} title={d.LastError}>
                           {d.LastError}
                         </div>
-                      ) : <span style={{ ...MONO, fontSize: 11, color: '#555555' }}>—</span>}
+                      ) : <span style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)' }}>—</span>}
                     </td>
                     <td style={{ padding: '14px 14px', whiteSpace: 'nowrap' }}>
                       {d.NextRetryAt ? (
                         <div>
-                          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: '#FFCD32', marginBottom: 4 }}>SCHEDULED</div>
-                          <div style={{ ...MONO, fontSize: 11, color: '#888888' }}>{new Date(d.NextRetryAt).toLocaleString()}</div>
+                          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--accent)', marginBottom: 4 }}>SCHEDULED</div>
+                          <div style={{ ...MONO, fontSize: 11, color: 'var(--text-muted)' }}>{new Date(d.NextRetryAt).toLocaleString()}</div>
                         </div>
-                      ) : <span style={{ ...MONO, fontSize: 11, color: '#555555' }}>—</span>}
+                      ) : <span style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)' }}>—</span>}
                     </td>
-                    <td style={{ ...MONO, fontSize: 10, color: '#888888', padding: '14px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
+                    <td style={{ ...MONO, fontSize: 10, color: 'var(--text-muted)', padding: '14px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
                       {new Date(d.CreatedAt).toLocaleString()}
                     </td>
                   </tr>
                 ))}
                 {!dlLoading && items.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ ...MONO, fontSize: 11, color: '#555555', textAlign: 'center', padding: '52px 16px', letterSpacing: '0.12em' }}>
+                    <td colSpan={6} style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '52px 16px', letterSpacing: '0.12em' }}>
                       NO DEAD LETTERS — ALL WEBHOOKS DELIVERED
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
-            {dlLoading && <div style={{ ...MONO, fontSize: 11, color: '#888888', padding: '12px 14px', letterSpacing: '0.1em' }}>LOADING...</div>}
+            {dlLoading && <div style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', padding: '12px 14px', letterSpacing: '0.1em' }}>LOADING...</div>}
           </div>
         </>
       )}
 
       {tab === 'misdirected' && (
-        <div style={{ border: '1px solid #2A2A2A', overflow: 'hidden' }}>
+        <div style={{ border: '1px solid var(--border)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #2A2A2A', background: '#0A0A0A' }}>
+              <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-raised)' }}>
                 {['TXN REF', 'SIG VALID', 'ERROR', 'RECEIVED'].map(h => (
-                  <th key={h} style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: '#888888', padding: '10px 14px', textAlign: 'left', fontWeight: 500 }}>
+                  <th key={h} style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-muted)', padding: '10px 14px', textAlign: 'left', fontWeight: 500 }}>
                     {h}
                   </th>
                 ))}
@@ -141,36 +136,36 @@ export default function DeadLettersPage() {
             </thead>
             <tbody>
               {misdirected.map(e => (
-                <tr key={e.ID} style={{ borderBottom: '1px solid #1A1A1A' }}
-                  onMouseEnter={ev => { ev.currentTarget.style.background = '#0F0F0F' }}
+                <tr key={e.ID} style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                  onMouseEnter={ev => { ev.currentTarget.style.background = 'var(--surface-raised)' }}
                   onMouseLeave={ev => { ev.currentTarget.style.background = '' }}
                 >
-                  <td style={{ ...MONO, fontSize: 11, color: '#888888', padding: '12px 14px' }}>
+                  <td style={{ ...MONO, fontSize: 11, color: 'var(--text-muted)', padding: '12px 14px' }}>
                     {e.NombaTxnRef ?? '—'}
                   </td>
                   <td style={{ padding: '12px 14px' }}>
-                    <span style={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', color: e.SignatureValid ? '#22c55e' : '#EF4444' }}>
+                    <span style={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', color: e.SignatureValid ? 'var(--green)' : 'var(--red)' }}>
                       {e.SignatureValid ? 'VALID' : 'INVALID'}
                     </span>
                   </td>
-                  <td style={{ ...MONO, fontSize: 11, color: '#FC8181', padding: '12px 14px', maxWidth: 340, wordBreak: 'break-word' }}>
+                  <td style={{ ...MONO, fontSize: 11, color: 'var(--red)', padding: '12px 14px', maxWidth: 340, wordBreak: 'break-word' }}>
                     {e.ErrorMessage ?? '—'}
                   </td>
-                  <td style={{ ...MONO, fontSize: 10, color: '#888888', padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                  <td style={{ ...MONO, fontSize: 10, color: 'var(--text-muted)', padding: '12px 14px', whiteSpace: 'nowrap' }}>
                     {new Date(e.ReceivedAt).toLocaleString()}
                   </td>
                 </tr>
               ))}
               {!mdLoading && misdirected.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ ...MONO, fontSize: 11, color: '#555555', textAlign: 'center', padding: '52px 16px', letterSpacing: '0.12em' }}>
+                  <td colSpan={4} style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '52px 16px', letterSpacing: '0.12em' }}>
                     NO MISDIRECTED PAYMENTS
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-          {mdLoading && <div style={{ ...MONO, fontSize: 11, color: '#888888', padding: '12px 14px', letterSpacing: '0.1em' }}>LOADING...</div>}
+          {mdLoading && <div style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', padding: '12px 14px', letterSpacing: '0.1em' }}>LOADING...</div>}
         </div>
       )}
     </div>

@@ -50,23 +50,8 @@ function AppRoutes() {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          background: '#0D0D0D',
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "'Bungee Inline', sans-serif",
-            fontSize: 16,
-            letterSpacing: '0.06em',
-            color: '#1A1A1A',
-          }}
-        >
+      <div style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: "'Bungee Inline', sans-serif", fontSize: 16, letterSpacing: '0.06em', color: 'var(--text)' }}>
           KANALL
         </span>
       </div>

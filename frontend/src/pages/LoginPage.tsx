@@ -10,13 +10,13 @@ interface Props {
 
 const TIP = 'One set of credentials. Your dashboard, your accounts, your ledger — all secured with a proper session.'
 
-const INPUT_CLASS =
-  'w-full bg-[#111111] border border-[#282828] px-4 py-3 text-sm text-[#F5F5F5] placeholder-[#333333] focus:outline-none focus:border-[#FFCD32] transition-colors'
-
-const LABEL_STYLE: React.CSSProperties = {
+const LABEL: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: '11px',
   letterSpacing: '0.1em',
+  display: 'block',
+  marginBottom: '8px',
+  color: 'var(--text-muted)',
 }
 
 function EyeIcon({ open }: { open: boolean }) {
@@ -47,16 +47,14 @@ export default function LoginPage({ onLogin }: Props) {
 
   return (
     <AuthShell tip={TIP}>
-      <div className="mb-8">
-        <h1 className="text-2xl font-medium text-[#F5F5F5] mb-1">Welcome back</h1>
-        <p className="text-[#444444] text-sm">Sign in to your Kanall dashboard.</p>
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>Welcome back</h1>
+        <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Sign in to your Kanall dashboard.</p>
       </div>
 
       <form onSubmit={e => { e.preventDefault(); mutate() }} className="space-y-4">
         <div>
-          <label className="block mb-2 text-[#5E5E5E]" style={LABEL_STYLE}>
-            EMAIL
-          </label>
+          <label style={LABEL}>EMAIL</label>
           <input
             type="email"
             value={email}
@@ -64,14 +62,12 @@ export default function LoginPage({ onLogin }: Props) {
             placeholder="you@example.com"
             required
             autoComplete="email"
-            className={INPUT_CLASS}
+            className="auth-input"
           />
         </div>
 
         <div>
-          <label className="block mb-2 text-[#5E5E5E]" style={LABEL_STYLE}>
-            PASSWORD
-          </label>
+          <label style={LABEL}>PASSWORD</label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -80,13 +76,14 @@ export default function LoginPage({ onLogin }: Props) {
               placeholder="Your password"
               required
               autoComplete="current-password"
-              className={`${INPUT_CLASS} pr-11`}
+              className="auth-input"
+              style={{ paddingRight: 44 }}
             />
             <button
               type="button"
               onClick={() => setShowPassword(v => !v)}
               tabIndex={-1}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555555] hover:text-[#F5F5F5] transition-colors bg-transparent border-none p-0 cursor-pointer"
+              style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
             >
               <EyeIcon open={showPassword} />
             </button>
@@ -94,7 +91,7 @@ export default function LoginPage({ onLogin }: Props) {
         </div>
 
         {error && (
-          <p className="text-red-400 text-xs" style={{ fontFamily: 'var(--font-mono)' }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)' }}>
             {error.message}
           </p>
         )}
@@ -102,16 +99,16 @@ export default function LoginPage({ onLogin }: Props) {
         <button
           type="submit"
           disabled={isPending}
-          className="w-full bg-[#FFCD32] text-[#0D0D0D] py-3.5 text-sm font-semibold tracking-widest hover:opacity-90 disabled:opacity-50 transition-opacity"
-          style={{ fontFamily: 'var(--font-mono)' }}
+          className="w-full"
+          style={{ fontFamily: 'var(--font-mono)', background: '#FFCD32', color: '#0D0D0D', padding: '14px', fontSize: 13, fontWeight: 600, letterSpacing: '0.12em', border: 'none', cursor: 'pointer', opacity: isPending ? 0.5 : 1 }}
         >
           {isPending ? 'SIGNING IN...' : 'SIGN IN →'}
         </button>
       </form>
 
-      <p className="text-center text-[#444444] text-xs mt-6">
+      <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 24 }}>
         New here?{' '}
-        <Link to="/register" className="text-[#FFCD32] hover:opacity-75 transition-opacity">
+        <Link to="/register" style={{ color: '#FFCD32', textDecoration: 'none' }}>
           Register →
         </Link>
       </p>

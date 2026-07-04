@@ -10,13 +10,13 @@ interface Props {
 
 const TIP = 'Provision real NUBANs. Record every payment in a double-entry ledger. Deliver events to your endpoint — all from one API key.'
 
-const INPUT_CLASS =
-  'w-full bg-[#111111] border border-[#282828] px-4 py-3 text-sm text-[#F5F5F5] placeholder-[#333333] focus:outline-none focus:border-[#FFCD32] transition-colors'
-
 const LABEL: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: '11px',
   letterSpacing: '0.1em',
+  display: 'block',
+  marginBottom: '8px',
+  color: 'var(--text-muted)',
 }
 
 type Step = 'form' | 'otp' | 'done'
@@ -43,7 +43,6 @@ export default function RegisterPage({ onRegister }: Props) {
   const [apiKey, setApiKey]     = useState('')
   const [copied, setCopied]     = useState(false)
 
-  // Form state
   const [name, setName]         = useState('')
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -51,28 +50,16 @@ export default function RegisterPage({ onRegister }: Props) {
   const [clientError, setClientError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm]   = useState(false)
-
-  // OTP state
   const [otp, setOtp] = useState('')
 
-  // Step 1 — register; explicit generic pins TData so TS doesn't guess
   const registerMutation = useMutation<{ tenantId: string }, Error>({
     mutationFn: () => api.register(name, email, password),
-    onSuccess: (data) => {
-      setTenantId(data.tenantId)
-      setStep('otp')
-    },
+    onSuccess: (data) => { setTenantId(data.tenantId); setStep('otp') },
   })
 
-  // Step 2 — verify OTP; explicit generic pins TData to { apiKey: string }
   const verifyMutation = useMutation<{ apiKey: string }, Error>({
     mutationFn: () => api.verifyEmail(tenantId, otp),
-    onSuccess: (data) => {
-      setApiKey(data.apiKey)
-      setStep('done')
-      // Session cookie is now set — notify App so the route guard flips
-      onRegister()
-    },
+    onSuccess: (data) => { setApiKey(data.apiKey); setStep('done'); onRegister() },
   })
 
   const validate = (): boolean => {
@@ -81,10 +68,7 @@ export default function RegisterPage({ onRegister }: Props) {
     return true
   }
 
-  const submitRegister = () => {
-    setClientError('')
-    if (validate()) registerMutation.mutate()
-  }
+  const submitRegister = () => { setClientError(''); if (validate()) registerMutation.mutate() }
 
   const copy = () => {
     navigator.clipboard.writeText(apiKey)
@@ -94,44 +78,52 @@ export default function RegisterPage({ onRegister }: Props) {
 
   const displayError = clientError || registerMutation.error?.message || verifyMutation.error?.message
 
-  // ── STEP: DONE — show API key once ──────────────────────────────────────
+  const eyeBtn = (show: boolean, toggle: () => void) => (
+    <button
+      type="button"
+      onClick={toggle}
+      tabIndex={-1}
+      style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
+    >
+      <EyeIcon open={show} />
+    </button>
+  )
+
+  // ── DONE ──
   if (step === 'done') {
     return (
       <AuthShell tip={TIP}>
         <div className="space-y-5">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <span className="text-green-400 text-xs" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em', color: '#22c55e' }}>
               ACCOUNT VERIFIED
             </span>
           </div>
 
           <div>
-            <div className="mb-1 text-[#444444]" style={LABEL}>API KEY — COPY NOW</div>
-            <p className="text-[#555555] text-xs leading-relaxed mb-3">
+            <div style={{ ...LABEL, marginBottom: 4 }}>API KEY — COPY NOW</div>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 12 }}>
               Store this in your server's <span style={{ fontFamily: 'var(--font-mono)' }}>.env</span>.
-              It won't be shown again — you can always copy it from your dashboard settings.
+              It won't be shown again — you can always rotate it from Settings.
             </p>
             <div
-              className="bg-[#0A0A0A] border border-[#282828] px-4 py-3 text-sm text-[#FFCD32] break-all select-all leading-relaxed"
-              style={{ fontFamily: 'var(--font-mono)' }}
+              style={{ fontFamily: 'var(--font-mono)', background: 'var(--surface-raised)', border: '1px solid var(--border)', padding: '12px 16px', fontSize: 13, color: '#FFCD32', wordBreak: 'break-all', userSelect: 'all', lineHeight: 1.6 }}
             >
               {apiKey}
             </div>
           </div>
 
-          <div className="flex gap-3 pt-1">
+          <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={copy}
-              className="flex-1 border border-[#282828] text-[#888888] hover:border-[#444444] hover:text-[#F5F5F5] py-3 text-xs tracking-widest transition-colors"
-              style={{ fontFamily: 'var(--font-mono)' }}
+              style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.12em', padding: '12px', background: 'transparent', color: copied ? '#22c55e' : 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer' }}
             >
               {copied ? 'COPIED ✓' : 'COPY KEY'}
             </button>
             <button
               onClick={onRegister}
-              className="flex-1 bg-[#FFCD32] text-[#0D0D0D] py-3 text-xs font-semibold tracking-widest hover:opacity-90 transition-opacity"
-              style={{ fontFamily: 'var(--font-mono)' }}
+              style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.12em', padding: '12px', background: '#FFCD32', color: '#0D0D0D', border: 'none', fontWeight: 600, cursor: 'pointer' }}
             >
               DASHBOARD →
             </button>
@@ -141,21 +133,21 @@ export default function RegisterPage({ onRegister }: Props) {
     )
   }
 
-  // ── STEP: OTP ────────────────────────────────────────────────────────────
+  // ── OTP ──
   if (step === 'otp') {
     return (
       <AuthShell tip={TIP}>
-        <div className="mb-8">
-          <h1 className="text-2xl font-medium text-[#F5F5F5] mb-1">Check your email</h1>
-          <p className="text-[#444444] text-sm">
-            We sent a 6-digit code to <span className="text-[#888888]">{email}</span>.
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>Check your email</h1>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+            We sent a 6-digit code to <span style={{ color: 'var(--text)' }}>{email}</span>.
             Enter it below to activate your account.
           </p>
         </div>
 
         <form onSubmit={e => { e.preventDefault(); verifyMutation.mutate() }} className="space-y-4">
           <div>
-            <label className="block mb-2 text-[#5E5E5E]" style={LABEL}>VERIFICATION CODE</label>
+            <label style={LABEL}>VERIFICATION CODE</label>
             <input
               type="text"
               inputMode="numeric"
@@ -166,32 +158,30 @@ export default function RegisterPage({ onRegister }: Props) {
               placeholder="000000"
               required
               autoFocus
-              className={INPUT_CLASS}
-              style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.3em', fontSize: '20px' }}
+              className="auth-input"
+              style={{ letterSpacing: '0.3em', fontSize: '20px' }}
             />
           </div>
 
           {verifyMutation.error && (
-            <p className="text-red-400 text-xs" style={{ fontFamily: 'var(--font-mono)' }}>
-              {verifyMutation.error.message}
-            </p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)' }}>{verifyMutation.error.message}</p>
           )}
 
           <button
             type="submit"
             disabled={verifyMutation.isPending || otp.length !== 6}
-            className="w-full bg-[#FFCD32] text-[#0D0D0D] py-3.5 text-sm font-semibold tracking-widest hover:opacity-90 disabled:opacity-50 transition-opacity"
-            style={{ fontFamily: 'var(--font-mono)' }}
+            className="w-full"
+            style={{ fontFamily: 'var(--font-mono)', background: '#FFCD32', color: '#0D0D0D', padding: '14px', fontSize: 13, fontWeight: 600, letterSpacing: '0.12em', border: 'none', cursor: 'pointer', opacity: (verifyMutation.isPending || otp.length !== 6) ? 0.5 : 1 }}
           >
             {verifyMutation.isPending ? 'VERIFYING...' : 'VERIFY →'}
           </button>
         </form>
 
-        <p className="text-center text-[#444444] text-xs mt-6">
+        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 24 }}>
           Didn't receive it?{' '}
           <button
             onClick={() => { setStep('form'); setOtp('') }}
-            className="text-[#FFCD32] hover:opacity-75 transition-opacity bg-transparent border-none p-0 cursor-pointer"
+            style={{ color: '#FFCD32', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}
           >
             Go back
           </button>
@@ -200,40 +190,27 @@ export default function RegisterPage({ onRegister }: Props) {
     )
   }
 
-  // ── STEP: FORM ───────────────────────────────────────────────────────────
+  // ── FORM ──
   return (
     <AuthShell tip={TIP}>
-      <div className="mb-8">
-        <h1 className="text-2xl font-medium text-[#F5F5F5] mb-1">Create account</h1>
-        <p className="text-[#444444] text-sm">Register your organisation to get started.</p>
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>Create account</h1>
+        <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Register your organisation to get started.</p>
       </div>
 
       <form onSubmit={e => { e.preventDefault(); submitRegister() }} className="space-y-4">
         <div>
-          <label className="block mb-2 text-[#5E5E5E]" style={LABEL}>ORGANISATION NAME</label>
-          <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="Acme Corp"
-            required
-            className={INPUT_CLASS}
-          />
+          <label style={LABEL}>ORGANISATION NAME</label>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Acme Corp" required className="auth-input" />
         </div>
 
         <div>
-          <label className="block mb-2 text-[#5E5E5E]" style={LABEL}>EMAIL</label>
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            required
-            className={INPUT_CLASS}
-          />
+          <label style={LABEL}>EMAIL</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required className="auth-input" />
         </div>
 
         <div>
-          <label className="block mb-2 text-[#5E5E5E]" style={LABEL}>PASSWORD</label>
+          <label style={LABEL}>PASSWORD</label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -241,21 +218,15 @@ export default function RegisterPage({ onRegister }: Props) {
               onChange={e => { setPassword(e.target.value); setClientError('') }}
               placeholder="At least 8 characters"
               required
-              className={`${INPUT_CLASS} pr-11`}
+              className="auth-input"
+              style={{ paddingRight: 44 }}
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(v => !v)}
-              tabIndex={-1}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555555] hover:text-[#F5F5F5] transition-colors bg-transparent border-none p-0 cursor-pointer"
-            >
-              <EyeIcon open={showPassword} />
-            </button>
+            {eyeBtn(showPassword, () => setShowPassword(v => !v))}
           </div>
         </div>
 
         <div>
-          <label className="block mb-2 text-[#5E5E5E]" style={LABEL}>CONFIRM PASSWORD</label>
+          <label style={LABEL}>CONFIRM PASSWORD</label>
           <div className="relative">
             <input
               type={showConfirm ? 'text' : 'password'}
@@ -263,40 +234,30 @@ export default function RegisterPage({ onRegister }: Props) {
               onChange={e => { setConfirm(e.target.value); setClientError('') }}
               placeholder="Repeat password"
               required
-              className={`${INPUT_CLASS} pr-11`}
+              className="auth-input"
+              style={{ paddingRight: 44 }}
             />
-            <button
-              type="button"
-              onClick={() => setShowConfirm(v => !v)}
-              tabIndex={-1}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555555] hover:text-[#F5F5F5] transition-colors bg-transparent border-none p-0 cursor-pointer"
-            >
-              <EyeIcon open={showConfirm} />
-            </button>
+            {eyeBtn(showConfirm, () => setShowConfirm(v => !v))}
           </div>
         </div>
 
         {displayError && (
-          <p className="text-red-400 text-xs" style={{ fontFamily: 'var(--font-mono)' }}>
-            {displayError}
-          </p>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)' }}>{displayError}</p>
         )}
 
         <button
           type="submit"
           disabled={registerMutation.isPending}
-          className="w-full bg-[#FFCD32] text-[#0D0D0D] py-3.5 text-sm font-semibold tracking-widest hover:opacity-90 disabled:opacity-50 transition-opacity"
-          style={{ fontFamily: 'var(--font-mono)' }}
+          className="w-full"
+          style={{ fontFamily: 'var(--font-mono)', background: '#FFCD32', color: '#0D0D0D', padding: '14px', fontSize: 13, fontWeight: 600, letterSpacing: '0.12em', border: 'none', cursor: 'pointer', opacity: registerMutation.isPending ? 0.5 : 1 }}
         >
           {registerMutation.isPending ? 'REGISTERING...' : 'REGISTER →'}
         </button>
       </form>
 
-      <p className="text-center text-[#444444] text-xs mt-6">
+      <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', marginTop: 24 }}>
         Already have an account?{' '}
-        <Link to="/login" className="text-[#FFCD32] hover:opacity-75 transition-opacity">
-          Log in →
-        </Link>
+        <Link to="/login" style={{ color: '#FFCD32', textDecoration: 'none' }}>Log in →</Link>
       </p>
     </AuthShell>
   )

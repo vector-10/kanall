@@ -14,10 +14,10 @@ interface Cfg {
 const CONFIGS: Record<string, Cfg> = {
   active:      { label: 'ACTIVE',      color: YELLOW,    bg: 'rgba(255,205,50,0.06)', borderColor: YELLOW,    dot: true },
   suspended:   { label: 'SUSPENDED',   color: '#D97706', bg: 'rgba(217,119,6,0.06)', borderColor: '#D97706',  dot: true },
-  expired:     { label: 'EXPIRED',     color: '#4B5563', bg: 'transparent',           borderColor: '#2A2A2A',  dot: true },
+  expired:     { label: 'EXPIRED',     color: '#4B5563', bg: 'transparent',           borderColor: '#9CA3AF',  dot: true },
   provisional: { label: 'PROVISIONAL', color: YELLOW,    bg: 'rgba(255,205,50,0.04)', borderColor: YELLOW,    borderStyle: 'dashed', allSides: true },
   confirmed:   { label: 'CONFIRMED',   color: '#4ADE80', bg: 'rgba(74,222,128,0.05)', borderColor: '#166534', allSides: true },
-  reversed:    { label: 'REVERSED',    color: '#4B5563', bg: 'transparent',           borderColor: '#2A2A2A', allSides: true, strikethrough: true },
+  reversed:    { label: 'REVERSED',    color: '#4B5563', bg: 'transparent',           borderColor: '#9CA3AF', allSides: true, strikethrough: true },
   pending:     { label: 'PENDING',     color: YELLOW,    bg: 'rgba(255,205,50,0.04)', borderColor: YELLOW,    borderStyle: 'dashed', allSides: true },
   dead_letter: { label: 'DEAD LETTER', color: '#EF4444', bg: 'rgba(239,68,68,0.05)', borderColor: '#7F1D1D',  dot: true },
   delivered:   { label: 'DELIVERED',   color: '#4ADE80', bg: 'rgba(74,222,128,0.05)', borderColor: '#166534', dot: true },

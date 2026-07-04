@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { api } from '../api'
 import type { Statement } from '../api'
 import StatusBadge from '../components/StatusBadge'
@@ -23,6 +23,12 @@ const COLS: [string, 'left' | 'right'][] = [
 export default function StatementPage() {
   const { accountRef } = useParams<{ accountRef: string }>()
 
+  const { data: accountData } = useQuery({
+    queryKey: ['account', accountRef],
+    queryFn: () => api.accounts.get(accountRef!),
+    enabled: !!accountRef,
+  })
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } =
     useInfiniteQuery({
       queryKey: ['statement', accountRef],
@@ -40,84 +46,59 @@ export default function StatementPage() {
   const lines = data?.pages.flatMap(p => p.lines ?? []) ?? []
 
   if (isLoading) return (
-    <div style={{ ...MONO, padding: 28, fontSize: 11, color: '#888888', letterSpacing: '0.12em' }}>
-      LOADING...
-    </div>
+    <div style={{ ...MONO, padding: 28, fontSize: 11, color: 'var(--text-faint)', letterSpacing: '0.12em' }}>LOADING...</div>
   )
   if (error) return (
-    <div style={{ ...MONO, padding: 28, fontSize: 11, color: '#EF4444', letterSpacing: '0.1em' }}>
-      {error.message}
-    </div>
+    <div style={{ ...MONO, padding: 28, fontSize: 11, color: 'var(--red)', letterSpacing: '0.1em' }}>{error.message}</div>
   )
 
+  const accountLabel = accountData?.BankAccountName ?? accountRef
+
   return (
-    <div style={{ padding: '32px 28px', maxWidth: 980 }}>
+    <div style={{ padding: '32px 36px' }}>
 
       {/* Breadcrumb */}
       <Link
         to={`/accounts/${accountRef}`}
-        style={{
-          ...MONO,
-          fontSize: 10,
-          color: '#888888',
-          textDecoration: 'none',
-          letterSpacing: '0.12em',
-          display: 'inline-block',
-          marginBottom: 28,
-        }}
-        onMouseEnter={e => { e.currentTarget.style.color = '#FFCD32' }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#888888' }}
+        style={{ ...MONO, fontSize: 10, color: 'var(--text-faint)', textDecoration: 'none', letterSpacing: '0.12em', display: 'inline-block', marginBottom: 24 }}
+        onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-faint)' }}
       >
-        ← {accountRef}
+        ← ACCOUNT DETAILS
       </Link>
 
       {/* Title */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: '#666', marginBottom: 5 }}>
-          {accountRef}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div>
+          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 5 }}>{accountRef}</div>
+          <h1 style={{ ...MONO, fontSize: 17, color: 'var(--text)', letterSpacing: '0.08em' }}>{accountLabel?.toUpperCase()} — STATEMENT</h1>
         </div>
-        <h1 style={{ ...MONO, fontSize: 17, color: '#F5F5F5', letterSpacing: '0.08em' }}>STATEMENT</h1>
       </div>
 
       {/* Summary stat row */}
       {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, marginBottom: 24, background: '#2A2A2A' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, marginBottom: 24, background: 'var(--border)' }}>
           {([
-            ['TOTAL CREDITS',   summary.totalCredits,    '#FFCD32'],
-            ['TOTAL DEBITS',    summary.totalDebits,     '#EF4444'],
-            ['CLOSING BALANCE', summary.closingBalance,  '#F5F5F5'],
-            ['OPENING BALANCE', summary.openingBalance,  '#5A5A5A'],
+            ['TOTAL CREDITS',   summary.totalCredits,   'var(--accent)'],
+            ['TOTAL DEBITS',    summary.totalDebits,    'var(--red)'],
+            ['CLOSING BALANCE', summary.closingBalance, 'var(--text)'],
+            ['OPENING BALANCE', summary.openingBalance, 'var(--text-muted)'],
           ] as [string, string, string][]).map(([label, value, color]) => (
-            <div key={label} style={{ background: '#111', padding: '14px 16px' }}>
-              <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: '#888888', marginBottom: 8 }}>
-                {label}
-              </div>
-              <div style={{ ...MONO, fontSize: 14, color, fontWeight: 500 }}>
-                NGN {ngn(value)}
-              </div>
+            <div key={label} style={{ background: 'var(--surface)', padding: '14px 16px' }}>
+              <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 8 }}>{label}</div>
+              <div style={{ ...MONO, fontSize: 14, color, fontWeight: 500 }}>NGN {ngn(value)}</div>
             </div>
           ))}
         </div>
       )}
 
       {/* Ledger table */}
-      <div style={{ border: '1px solid #2A2A2A', overflow: 'hidden' }}>
+      <div style={{ border: '1px solid var(--border)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #2A2A2A', background: '#0A0A0A' }}>
+            <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-raised)' }}>
               {COLS.map(([h, align]) => (
-                <th
-                  key={h}
-                  style={{
-                    ...MONO,
-                    fontSize: 9,
-                    letterSpacing: '0.14em',
-                    color: '#888888',
-                    padding: '10px 14px',
-                    textAlign: align,
-                    fontWeight: 500,
-                  }}
-                >
+                <th key={h} style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-muted)', padding: '10px 14px', textAlign: align, fontWeight: 500 }}>
                   {h}
                 </th>
               ))}
@@ -126,60 +107,38 @@ export default function StatementPage() {
           <tbody>
             {lines.map(({ entry, runningBalance }) => {
               const isCredit = entry.Direction === 'credit'
-              const amtColor = isCredit ? '#FFCD32' : '#EF4444'
+              const amtColor = isCredit ? 'var(--accent)' : 'var(--red)'
               return (
                 <tr
                   key={entry.ID}
-                  style={{ borderBottom: '1px solid #1A1A1A' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#0F0F0F' }}
+                  style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-raised)' }}
                   onMouseLeave={e => { e.currentTarget.style.background = '' }}
                 >
-                  {/* Direction */}
                   <td style={{ padding: '10px 14px' }}>
                     <span style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: amtColor }}>
                       {entry.Direction.toUpperCase()}
                     </span>
                   </td>
-
-                  {/* Amount */}
                   <td style={{ ...MONO, fontSize: 12, color: amtColor, padding: '10px 14px', textAlign: 'right' }}>
                     {isCredit ? '+' : '-'}{ngn(entry.Amount)}
                   </td>
-
-                  {/* Fee */}
-                  <td style={{ ...MONO, fontSize: 11, color: '#888888', padding: '10px 14px', textAlign: 'right' }}>
+                  <td style={{ ...MONO, fontSize: 11, color: 'var(--text-muted)', padding: '10px 14px', textAlign: 'right' }}>
                     {parseFloat(entry.Fee) > 0 ? ngn(entry.Fee) : '—'}
                   </td>
-
-                  {/* Running balance */}
-                  <td style={{ ...MONO, fontSize: 12, color: '#888888', padding: '10px 14px', textAlign: 'right' }}>
+                  <td style={{ ...MONO, fontSize: 12, color: 'var(--text-muted)', padding: '10px 14px', textAlign: 'right' }}>
                     {ngn(runningBalance)}
                   </td>
-
-                  {/* Status */}
                   <td style={{ padding: '10px 14px' }}>
                     <StatusBadge status={entry.Status} />
                   </td>
-
-                  {/* Narration */}
                   <td
-                    style={{
-                      fontSize: 11,
-                      color: '#888888',
-                      padding: '10px 14px',
-                      maxWidth: 180,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      fontFamily: 'var(--font-sans)',
-                    }}
+                    style={{ fontSize: 11, color: 'var(--text-muted)', padding: '10px 14px', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}
                     title={entry.Narration ?? ''}
                   >
                     {entry.Narration ?? '—'}
                   </td>
-
-                  {/* Date */}
-                  <td style={{ ...MONO, fontSize: 10, color: '#888888', padding: '10px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
+                  <td style={{ ...MONO, fontSize: 10, color: 'var(--text-muted)', padding: '10px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
                     {new Date(entry.CreatedAt).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </td>
                 </tr>
@@ -187,17 +146,7 @@ export default function StatementPage() {
             })}
             {lines.length === 0 && (
               <tr>
-                <td
-                  colSpan={7}
-                  style={{
-                    ...MONO,
-                    fontSize: 11,
-                    color: '#555555',
-                    textAlign: 'center',
-                    padding: '52px 16px',
-                    letterSpacing: '0.12em',
-                  }}
-                >
+                <td colSpan={7} style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '52px 16px', letterSpacing: '0.12em' }}>
                   NO ENTRIES YET
                 </td>
               </tr>
@@ -206,21 +155,11 @@ export default function StatementPage() {
         </table>
 
         {hasNextPage && (
-          <div style={{ padding: '10px 14px', borderTop: '1px solid #2A2A2A' }}>
+          <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border)' }}>
             <button
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
-              style={{
-                ...MONO,
-                fontSize: 10,
-                letterSpacing: '0.12em',
-                color: '#FFCD32',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 0,
-                opacity: isFetchingNextPage ? 0.5 : 1,
-              }}
+              style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: isFetchingNextPage ? 0.5 : 1 }}
             >
               {isFetchingNextPage ? 'LOADING...' : 'LOAD MORE →'}
             </button>

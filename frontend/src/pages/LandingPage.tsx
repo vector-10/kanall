@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import ThemeToggle from "../components/ThemeToggle";
 
 interface Props {
   isAuthed: boolean;
@@ -49,10 +50,10 @@ export default function LandingPage({ isAuthed }: Props) {
 
   return (
     <div
-      className="relative overflow-hidden min-h-screen bg-[#0D0D0D] text-[#F5F5F5]"
-      style={{ fontFamily: "var(--font-sans)" }}
+      className="relative overflow-hidden min-h-screen"
+      style={{ fontFamily: "var(--font-sans)", background: "var(--bg)", color: "var(--text)" }}
     >
-      {/* Yellow splash — top-right, wavy organic border */}
+      {/* Yellow splash — top-right */}
       <svg
         aria-hidden="true"
         className="pointer-events-none absolute top-0 right-0"
@@ -73,23 +74,32 @@ export default function LandingPage({ isAuthed }: Props) {
       </svg>
 
       {/* NAV */}
-      <nav className="relative z-10 flex items-center justify-between px-6 md:px-12 py-5 border-b border-[#181818]">
-        <span
-          style={{
-            fontFamily: "'Bungee Inline', sans-serif",
-            fontSize: "24px",
-            letterSpacing: "0.06em",
-          }}
-        >
+      <nav
+        className="relative z-10 flex items-center justify-between px-6 md:px-12 py-5"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        <span style={{ fontFamily: "'Bungee Inline', sans-serif", fontSize: "24px", letterSpacing: "0.06em", color: "var(--text)" }}>
           KANALL
         </span>
-        <Link
-          to={navTo}
-          className="text-[#F5F5F5] bg-[#0D0D0D] px-4 py-2 text-sm font-semibold tracking-widest hover:opacity-75 transition-opacity"
-          style={{ fontFamily: "var(--font-mono)" }}
-        >
-          {navLabel}
-        </Link>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <ThemeToggle />
+          <Link
+            to={navTo}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              letterSpacing: "0.12em",
+              color: "var(--text)",
+              background: "transparent",
+              border: "1px solid var(--border)",
+              padding: "7px 16px",
+              textDecoration: "none",
+            }}
+          >
+            {navLabel}
+          </Link>
+        </div>
       </nav>
 
       {/* HERO */}
@@ -98,39 +108,25 @@ export default function LandingPage({ isAuthed }: Props) {
           {/* Left */}
           <div>
             <div className="flex items-center gap-3 mb-10">
-              <div className="h-px w-6 bg-[#FFCD32]" />
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "13px",
-                  letterSpacing: "0.2em",
-                  color: "#FFCD32",
-                }}
-              >
+              <div className="h-px w-6" style={{ background: "#FFCD32" }} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "13px", letterSpacing: "0.2em", color: "#FFCD32" }}>
                 BUILT ON NOMBA
               </span>
             </div>
 
             <h1
               className="font-medium leading-[1.06] mb-7"
-              style={{
-                fontSize: "clamp(2.6rem, 6vw, 4.0rem)",
-                letterSpacing: "-0.025em",
-                fontFamily: "var(--font-sans)",
-              }}
+              style={{ fontSize: "clamp(2.6rem, 6vw, 4.0rem)", letterSpacing: "-0.025em", color: "var(--text)" }}
             >
               Virtual account
               <br />
               infrastructure
               <br />
-              <span className="text-[#FFCD32]">for any platf</span>
-              <span className="text-[#0D0D0D] md:text-[#FFCD32]">orm.</span>
+              <span style={{ color: "#FFCD32" }}>for any platf</span>
+              <span style={{ color: "#FFCD32" }}>orm.</span>
             </h1>
 
-            <p
-              className="text-[#606060] text-base md:text-lg leading-relaxed mb-10"
-              style={{ maxWidth: 460 }}
-            >
+            <p style={{ color: "var(--text-muted)", fontSize: "1.05rem", lineHeight: 1.7, marginBottom: 40, maxWidth: 460 }}>
               Kanall is a domain-blind backend primitive. Provision dedicated
               NUBANs, record double-entry ledger entries, and deliver real-time
               payment events — without vertical-specific logic.
@@ -139,36 +135,30 @@ export default function LandingPage({ isAuthed }: Props) {
             <div className="flex flex-wrap gap-4">
               <Link
                 to={ctaTo}
-                className="bg-[#FFCD32] text-[#0D0D0D] px-7 py-3.5 text-sm font-semibold tracking-widest hover:opacity-90 transition-opacity"
-                style={{ fontFamily: "var(--font-mono)" }}
+                style={{ fontFamily: "var(--font-mono)", background: "#FFCD32", color: "#0D0D0D", padding: "14px 28px", fontSize: 13, fontWeight: 600, letterSpacing: "0.12em", textDecoration: "none" }}
               >
                 {ctaLabel}
               </Link>
               <a
                 href="#how-it-works"
-                className="border border-[#282828] text-[#555555] px-7 py-3.5 text-sm tracking-widest hover:border-[#3C3C3C] hover:text-[#888] transition-colors"
-                style={{ fontFamily: "var(--font-mono)" }}
+                style={{ fontFamily: "var(--font-mono)", border: "1px solid var(--border)", color: "var(--text-muted)", padding: "14px 28px", fontSize: 13, letterSpacing: "0.12em", textDecoration: "none" }}
               >
                 HOW IT WORKS
               </a>
             </div>
           </div>
 
-          {/* Right — Terminal (desktop only) */}
+          {/* Right — Terminal (desktop only, stays dark by design) */}
           <div className="hidden lg:block">
             <div
-              className="border border-[#1A1A1A] bg-[#070707]"
-              style={{ fontFamily: "var(--font-mono)" }}
+              style={{ border: "1px solid #1A1A1A", background: "#070707", fontFamily: "var(--font-mono)" }}
             >
               {/* chrome */}
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1A1A1A]">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#252525]" />
-                <div className="w-2.5 h-2.5 rounded-full bg-[#252525]" />
-                <div className="w-2.5 h-2.5 rounded-full bg-[#FFCD32]" />
-                <span
-                  className="ml-2 text-[#2E2E2E]"
-                  style={{ fontSize: "12px", letterSpacing: "0.1em" }}
-                >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", borderBottom: "1px solid #1A1A1A" }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#252525" }} />
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#252525" }} />
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#FFCD32" }} />
+                <span style={{ marginLeft: 8, fontSize: "12px", letterSpacing: "0.1em", color: "#2E2E2E" }}>
                   POST /v1/accounts
                 </span>
               </div>
@@ -182,14 +172,10 @@ export default function LandingPage({ isAuthed }: Props) {
                 <span style={{ color: "#FFCD32" }}>curl</span>
                 {" -X POST kanall.app/v1/accounts \\\n"}
                 {"   -H "}
-                <span style={{ color: "#FFCD32" }}>
-                  "X-API-Key: sk_live_..."
-                </span>
+                <span style={{ color: "#FFCD32" }}>"X-API-Key: sk_live_..."</span>
                 {" \\\n"}
                 {`   -d '{"externalRef":"Swift Logistics"}'\n\n`}
-                <span style={{ color: "#3A3A3A" }}>
-                  {"HTTP/1.1 201 Created\n\n"}
-                </span>
+                <span style={{ color: "#3A3A3A" }}>{"HTTP/1.1 201 Created\n\n"}</span>
                 {"{\n"}
                 {'  "AccountRef": '}
                 <span style={{ color: "#FFCD32" }}>"acme-001"</span>
@@ -213,94 +199,52 @@ export default function LandingPage({ isAuthed }: Props) {
       </section>
 
       {/* RULE */}
-      <div className="h-px bg-[#181818] mx-6 md:mx-12" />
+      <div className="mx-6 md:mx-12" style={{ height: 1, background: "var(--border)" }} />
 
       {/* PRIMITIVES */}
       <section className="px-6 md:px-12 py-16 md:py-24 max-w-6xl mx-auto">
         <div className="flex items-center gap-4 mb-12">
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "13px",
-              letterSpacing: "0.2em",
-              color: "#FFCD32",
-            }}
-          >
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "13px", letterSpacing: "0.2em", color: "#FFCD32" }}>
             PRIMITIVES
           </span>
-          <div className="h-px flex-1 bg-[#181818]" />
+          <div className="h-px flex-1" style={{ background: "var(--border)" }} />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {PRIMITIVES.map(({ label, body }) => (
-            <div key={label} className="border-l-2 border-[#FFCD32] pl-5 py-1">
-              <div
-                className="font-semibold mb-3"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "12px",
-                  letterSpacing: "0.15em",
-                  color: "#FFCD32",
-                }}
-              >
+            <div key={label} className="pl-5 py-1" style={{ borderLeft: "2px solid #FFCD32" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "12px", letterSpacing: "0.15em", color: "#FFCD32", fontWeight: 600, marginBottom: 12 }}>
                 {label}
               </div>
-              <p className="text-[#888888] text-base leading-relaxed">{body}</p>
+              <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: 1.7 }}>{body}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* RULE */}
-      <div className="h-px bg-[#181818] mx-6 md:mx-12" />
+      <div className="mx-6 md:mx-12" style={{ height: 1, background: "var(--border)" }} />
 
       {/* HOW IT WORKS */}
-      <section
-        id="how-it-works"
-        className="px-6 md:px-12 py-16 md:py-24 max-w-6xl mx-auto"
-      >
+      <section id="how-it-works" className="px-6 md:px-12 py-16 md:py-24 max-w-6xl mx-auto">
         <div className="flex items-center gap-4 mb-12">
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "13px",
-              letterSpacing: "0.2em",
-              color: "#FFCD32",
-            }}
-          >
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "13px", letterSpacing: "0.2em", color: "#FFCD32" }}>
             HOW IT WORKS
           </span>
-          <div className="h-px flex-1 bg-[#181818]" />
+          <div className="h-px flex-1" style={{ background: "var(--border)" }} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8">
           {STEPS.map(({ n, title, body }) => (
             <div key={n} className="flex gap-5">
-              <div
-                className="shrink-0 text-[#FFCD32]"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "1.8rem",
-                  fontWeight: 300,
-                  lineHeight: 1.1,
-                }}
-              >
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "1.8rem", fontWeight: 300, lineHeight: 1.1, color: "#FFCD32", flexShrink: 0 }}>
                 {n}
               </div>
               <div>
-                <div
-                  className="font-semibold mb-2 text-[#F5F5F5]"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "12px",
-                    letterSpacing: "0.15em",
-                  }}
-                >
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "12px", letterSpacing: "0.15em", fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>
                   {title}
                 </div>
-                <p className="text-[#888888] text-base leading-relaxed">
-                  {body}
-                </p>
+                <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: 1.7 }}>{body}</p>
               </div>
             </div>
           ))}
@@ -308,23 +252,22 @@ export default function LandingPage({ isAuthed }: Props) {
       </section>
 
       {/* BOTTOM CTA */}
-      <section className="border-t border-[#181818]">
-        <div className="max-w-6xl mx-auto px-6 md:px-12 py-14 md:py-20 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+      <section style={{ borderTop: "1px solid var(--border)" }}>
+        <div
+          className="max-w-6xl mx-auto px-6 md:px-12 py-14 md:py-20 flex flex-col md:flex-row items-start md:items-center justify-between gap-8"
+        >
           <div>
-            <h2
-              className="text-3xl md:text-4xl font-medium text-[#F5F5F5] mb-2"
-              style={{ letterSpacing: "-0.015em" }}
-            >
+            <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.2rem)", fontWeight: 500, color: "var(--text)", letterSpacing: "-0.015em", marginBottom: 8 }}>
               Ready to provision your first account?
             </h2>
-            <p className="text-[#3C3C3C] text-base">
+            <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>
               One API key. Unlimited virtual accounts. No vertical lock-in.
             </p>
           </div>
           <Link
             to={isAuthed ? "/accounts" : "/register"}
-            className="shrink-0 bg-[#FFCD32] text-[#0D0D0D] px-8 py-4 text-sm font-semibold tracking-widest hover:opacity-90 transition-opacity"
-            style={{ fontFamily: "var(--font-mono)" }}
+            className="shrink-0"
+            style={{ fontFamily: "var(--font-mono)", background: "#FFCD32", color: "#0D0D0D", padding: "16px 32px", fontSize: 13, fontWeight: 600, letterSpacing: "0.12em", textDecoration: "none" }}
           >
             {isAuthed ? "DASHBOARD →" : "REGISTER →"}
           </Link>
@@ -332,26 +275,12 @@ export default function LandingPage({ isAuthed }: Props) {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-[#111111] px-6 md:px-12 py-5">
+      <footer style={{ borderTop: "1px solid var(--border)" }} className="px-6 md:px-12 py-5">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "12px",
-              letterSpacing: "0.18em",
-              color: "#3C3C3C",
-            }}
-          >
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "12px", letterSpacing: "0.18em", color: "var(--text-faint)" }}>
             KANALL — POWERED BY NOMBA
           </span>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "12px",
-              letterSpacing: "0.1em",
-              color: "#3C3C3C",
-            }}
-          >
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "12px", letterSpacing: "0.1em", color: "var(--text-faint)" }}>
             TEAM PRÓTOS
           </span>
         </div>

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import ThemeToggle from './ThemeToggle'
 
 interface Props {
   tip: string
@@ -8,8 +9,8 @@ interface Props {
 export default function AuthShell({ tip, children }: Props) {
   return (
     <div
-      className="bg-[#0D0D0D] text-[#F5F5F5] md:flex"
-      style={{ fontFamily: 'var(--font-sans)', minHeight: '100svh' }}
+      className="md:flex"
+      style={{ fontFamily: 'var(--font-sans)', minHeight: '100svh', background: 'var(--bg)', color: 'var(--text)' }}
     >
 
       {/* LEFT PANEL — desktop only */}
@@ -36,25 +37,25 @@ export default function AuthShell({ tip, children }: Props) {
         {/* Panel content */}
         <div className="relative z-10 flex flex-col h-full px-12 py-10" style={{ minHeight: '100svh' }}>
 
-          {/* Logo — sits on yellow area, so dark text */}
+          {/* Logo — on yellow area, always dark text */}
           <Link to="/" className="inline-block">
             <span style={{ fontFamily: "'Bungee Inline', sans-serif", fontSize: '22px', letterSpacing: '0.06em', color: '#0D0D0D' }}>
               KANALL
             </span>
           </Link>
 
-          {/* Tip — centered vertically, on yellow background */}
+          {/* Tip — centered vertically */}
           <div className="flex-1 flex items-center pl-6">
             <div style={{ maxWidth: 300 }}>
-              <div className="w-8 h-px bg-[#0D0D0D] mb-6 opacity-30" />
-              <p className="text-[#0D0D0D] font-medium leading-snug" style={{ fontSize: 'clamp(1.25rem, 2vw, 1.55rem)', letterSpacing: '-0.01em' }}>
+              <div className="w-8 h-px mb-6" style={{ background: 'rgba(0,0,0,0.25)' }} />
+              <p className="font-medium leading-snug" style={{ fontSize: 'clamp(1.25rem, 2vw, 1.55rem)', letterSpacing: '-0.01em', color: '#0D0D0D' }}>
                 {tip}
               </p>
             </div>
           </div>
 
           {/* Footer label */}
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.18em', color: 'rgba(0,0,0,0.35)' }}>
+          <span className="nomba-label" style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.18em' }}>
             BUILT ON NOMBA
           </span>
         </div>
@@ -62,6 +63,11 @@ export default function AuthShell({ tip, children }: Props) {
 
       {/* RIGHT PANEL — form */}
       <div className="flex-1 relative flex flex-col items-center justify-center px-6 py-16 md:py-12" style={{ minHeight: '100svh' }}>
+
+        {/* Theme toggle — top right of form panel */}
+        <div className="absolute top-4 right-4 z-10">
+          <ThemeToggle />
+        </div>
 
         {/* Mobile: yellow splash top-left */}
         <svg

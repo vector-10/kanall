@@ -5,41 +5,45 @@ import { api } from '../api'
 import type { Account, AccountsResponse, BankAccount, SettleResult } from '../api'
 import StatusBadge from '../components/StatusBadge'
 
-type LifecycleAction = 'expire'
-
-interface ActionDef {
-  action: LifecycleAction
-  label: string
-  color: string
-  borderColor: string
-  filled?: boolean
-}
-
-const ACTIONS: Record<string, ActionDef[]> = {
-  active:  [{ action: 'expire', label: 'EXPIRE', color: '#EF4444', borderColor: '#7F1D1D' }],
-  expired: [],
-}
-
 const MONO = { fontFamily: 'var(--font-mono)' }
+
+const btn = (variant: 'primary' | 'danger' | 'ghost' | 'outline'): React.CSSProperties => {
+  const base: React.CSSProperties = { ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '8px 16px', border: 'none', cursor: 'pointer' }
+  if (variant === 'primary') return { ...base, background: 'var(--accent)', color: 'var(--accent-fg)' }
+  if (variant === 'danger')  return { ...base, background: 'transparent', color: 'var(--red)', border: '1px solid var(--red)' }
+  if (variant === 'ghost')   return { ...base, background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)' }
+  return { ...base, background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent)' }
+}
+
+const inputStyle: React.CSSProperties = {
+  ...MONO, fontSize: 12, width: '100%',
+  background: 'var(--surface-raised)', border: '1px solid var(--border)',
+  color: 'var(--text)', padding: '8px 12px', outline: 'none', boxSizing: 'border-box',
+}
 
 export default function AccountDetailPage() {
   const { accountRef } = useParams<{ accountRef: string }>()
   const queryClient = useQueryClient()
-  const [showHistory, setShowHistory] = useState(false)
-  const [renaming, setRenaming] = useState(false)
-  const [nameInput, setNameInput] = useState('')
-  const [renameError, setRenameError] = useState('')
 
-  const [payoutOpen, setPayoutOpen] = useState(false)
-  const [payAmount, setPayAmount] = useState('')
-  const [payBankCode, setPayBankCode] = useState('')
+  // UI state
+  const [showHistory, setShowHistory]         = useState(false)
+  const [renaming, setRenaming]               = useState(false)
+  const [nameInput, setNameInput]             = useState('')
+  const [renameError, setRenameError]         = useState('')
+  const [showExpireConfirm, setShowExpireConfirm] = useState(false)
+
+  // Payout state
+  const [payoutOpen, setPayoutOpen]           = useState(false)
+  const [payAmount, setPayAmount]             = useState('')
+  const [payBankCode, setPayBankCode]         = useState('')
   const [payAccountNumber, setPayAccountNumber] = useState('')
-  const [payNarration, setPayNarration] = useState('')
+  const [payNarration, setPayNarration]       = useState('')
   const [lookedUpAccount, setLookedUpAccount] = useState<BankAccount | null>(null)
-  const [lookupErr, setLookupErr] = useState('')
-  const [settleResult, setSettleResult] = useState<SettleResult | null>(null)
-  const [settleErr, setSettleErr] = useState('')
+  const [lookupErr, setLookupErr]             = useState('')
+  const [settleResult, setSettleResult]       = useState<SettleResult | null>(null)
+  const [settleErr, setSettleErr]             = useState('')
 
+  // Data queries
   const { data: account, isLoading, error } = useQuery({
     queryKey: ['account', accountRef],
     queryFn: () => api.accounts.get(accountRef!),
@@ -62,6 +66,14 @@ export default function AccountDetailPage() {
     enabled: !!accountRef && showHistory,
   })
 
+  const { data: banksData } = useQuery({
+    queryKey: ['settlement-banks'],
+    queryFn: () => api.settlement.listBanks(),
+    staleTime: 5 * 60 * 1000,
+    enabled: account?.Status === 'active',
+  })
+
+  // Mutations
   const onSuccess = (updated: Account) => {
     queryClient.setQueryData(['account', accountRef], updated)
     queryClient.invalidateQueries({ queryKey: ['accounts'] })
@@ -71,27 +83,8 @@ export default function AccountDetailPage() {
 
   const renameMutation = useMutation({
     mutationFn: (name: string) => api.accounts.update(accountRef!, { name }),
-    onSuccess: (updated) => {
-      onSuccess(updated)
-      setRenaming(false)
-      setNameInput('')
-      setRenameError('')
-    },
+    onSuccess: (updated) => { onSuccess(updated); setRenaming(false); setNameInput(''); setRenameError('') },
     onError: (err: Error) => setRenameError(err.message),
-  })
-
-  const mutations: Record<LifecycleAction, typeof expireMutation> = {
-    expire: expireMutation,
-  }
-
-  const acting = Object.values(mutations).some(m => m.isPending)
-  const actionError = Object.values(mutations).find(m => m.error)?.error?.message
-
-  const { data: banksData } = useQuery({
-    queryKey: ['settlement-banks'],
-    queryFn: () => api.settlement.listBanks(),
-    staleTime: 5 * 60 * 1000,
-    enabled: account?.Status === 'active',
   })
 
   const lookupMutation = useMutation({
@@ -102,45 +95,30 @@ export default function AccountDetailPage() {
   })
 
   const settleMutation = useMutation({
-    mutationFn: () =>
-      api.settlement.settle(accountRef!, payAmount, payBankCode, payAccountNumber, payNarration || undefined),
+    mutationFn: () => api.settlement.settle(accountRef!, payAmount, payBankCode, payAccountNumber, payNarration || undefined),
     onSuccess: (data) => {
-      setSettleResult(data)
-      setSettleErr('')
-      setPayAmount('')
-      setPayBankCode('')
-      setPayAccountNumber('')
-      setPayNarration('')
-      setLookedUpAccount(null)
+      setSettleResult(data); setSettleErr('')
+      setPayAmount(''); setPayBankCode(''); setPayAccountNumber(''); setPayNarration(''); setLookedUpAccount(null)
     },
     onError: (err: Error) => setSettleErr(err.message),
   })
 
   const handleAccountNumberChange = (val: string) => {
-    setPayAccountNumber(val)
-    setLookedUpAccount(null)
-    setLookupErr('')
+    setPayAccountNumber(val); setLookedUpAccount(null); setLookupErr('')
   }
 
   const triggerLookup = (accountNumber: string, bankCode: string) => {
-    if (accountNumber.length === 10 && bankCode) {
-      lookupMutation.mutate({ accountNumber, bankCode })
-    }
+    if (accountNumber.length === 10 && bankCode) lookupMutation.mutate({ accountNumber, bankCode })
   }
 
+  // Loading / error states
   if (isLoading) return (
-    <div style={{ ...MONO, padding: 28, fontSize: 11, color: '#888888', letterSpacing: '0.12em' }}>
-      LOADING...
-    </div>
+    <div style={{ ...MONO, padding: 40, fontSize: 11, color: 'var(--text-faint)', letterSpacing: '0.12em' }}>LOADING...</div>
   )
   if (error) return (
-    <div style={{ ...MONO, padding: 28, fontSize: 11, color: '#EF4444', letterSpacing: '0.1em' }}>
-      {(error as Error).message}
-    </div>
+    <div style={{ ...MONO, padding: 40, fontSize: 11, color: 'var(--red)' }}>{(error as Error).message}</div>
   )
   if (!account) return null
-
-  const actions = ACTIONS[account.Status] ?? []
 
   const rows: [string, string | null, boolean?][] = [
     ['NUBAN',           account.BankAccountNumber, true],
@@ -149,453 +127,365 @@ export default function AccountDetailPage() {
     ['CURRENCY',        account.Currency],
     ['CALLBACK URL',    account.CallbackURL, true],
     ['EXPECTED AMOUNT', account.ExpectedAmount ? `NGN ${account.ExpectedAmount}` : null, true],
+    ['ACCOUNT REF',     account.AccountRef, true],
     ['CREATED',         new Date(account.CreatedAt).toLocaleString()],
   ]
 
   return (
-    <div style={{ padding: '32px 28px', maxWidth: 660 }}>
+    <div style={{ padding: '32px 36px' }}>
 
+      {/* Back */}
       <Link
         to="/accounts"
-        style={{ ...MONO, fontSize: 10, color: '#888888', textDecoration: 'none', letterSpacing: '0.12em', display: 'inline-block', marginBottom: 28 }}
-        onMouseEnter={e => { e.currentTarget.style.color = '#FFCD32' }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#888888' }}
+        style={{ ...MONO, fontSize: 10, color: 'var(--text-faint)', textDecoration: 'none', letterSpacing: '0.12em', display: 'inline-block', marginBottom: 24 }}
+        onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-faint)' }}
       >
         ← ACCOUNTS
       </Link>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
-          <h1 style={{ ...MONO, fontSize: 20, color: '#FFCD32', letterSpacing: '0.06em', marginBottom: 6 }}>
-            {account.AccountRef}
-          </h1>
-          <span style={{ ...MONO, fontSize: 9, color: '#888888', letterSpacing: '0.16em' }}>
+          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 4 }}>
             {account.Provider.toUpperCase()}
-          </span>
+          </div>
+          <h1 style={{ ...MONO, fontSize: 18, color: 'var(--text)', letterSpacing: '0.04em', wordBreak: 'break-all' }}>
+            {account.BankAccountName ?? account.AccountRef}
+          </h1>
         </div>
         <StatusBadge status={account.Status} />
       </div>
 
-      {/* Balance chip */}
-      {balanceData && (
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 10,
-          border: '1px solid #2A2A2A',
-          padding: '10px 18px',
-          marginBottom: 20,
-        }}>
-          <span style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: '#555' }}>BALANCE</span>
-          <span style={{ ...MONO, fontSize: 18, color: '#FFCD32', letterSpacing: '0.04em' }}>
-            ₦{Number(balanceData.balance).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
-          </span>
-        </div>
-      )}
+      {/* Two-column grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 40, alignItems: 'start' }}>
 
-      {/* KV rows */}
-      <div style={{ border: '1px solid #2A2A2A', marginBottom: 20 }}>
-        {rows.map(([label, value, mono], i) => (
-          <div key={label} style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 20,
-            padding: '10px 16px',
-            borderBottom: i < rows.length - 1 ? '1px solid #1A1A1A' : 'none',
-          }}>
-            <span style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: '#888888', width: 140, flexShrink: 0, paddingTop: 1 }}>
-              {label}
-            </span>
-            <span style={{
-              fontFamily: mono ? 'var(--font-mono)' : 'var(--font-sans)',
-              fontSize: 12,
-              color: value ? '#C0C0C0' : '#555555',
-              letterSpacing: mono ? '0.06em' : 0,
-              wordBreak: 'break-all',
-            }}>
-              {value ?? '—'}
-            </span>
+        {/* ── Left: info + history ── */}
+        <div>
+          <div style={{ border: '1px solid var(--border)', marginBottom: 24 }}>
+            {rows.map(([label, value, mono], i) => (
+              <div key={label} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 16,
+                padding: '10px 16px',
+                borderBottom: i < rows.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+              }}>
+                <span style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-muted)', width: 130, flexShrink: 0, paddingTop: 1 }}>
+                  {label}
+                </span>
+                <span style={{
+                  fontFamily: mono ? 'var(--font-mono)' : 'var(--font-sans)',
+                  fontSize: 12, color: value ? 'var(--text)' : 'var(--text-faint)',
+                  letterSpacing: mono ? '0.06em' : 0, wordBreak: 'break-all',
+                }}>
+                  {value ?? '—'}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* Rename section */}
-      {account.Status === 'active' && (
-        <div style={{ marginBottom: 20 }}>
-          {!renaming ? (
-            <button
-              onClick={() => { setRenaming(true); setNameInput(account.BankAccountName ?? '') }}
-              style={{
-                ...MONO,
-                fontSize: 10,
-                letterSpacing: '0.12em',
-                padding: '7px 16px',
-                background: 'transparent',
-                color: '#888888',
-                border: '1px solid #2A2A2A',
-                cursor: 'pointer',
-              }}
-            >
-              RENAME ACCOUNT
-            </button>
-          ) : (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <input
-                type="text"
-                value={nameInput}
-                onChange={e => setNameInput(e.target.value)}
-                placeholder="New account name"
-                style={{
-                  ...MONO,
-                  fontSize: 12,
-                  background: '#0A0A0A',
-                  border: '1px solid #3A3A3A',
-                  color: '#C0C0C0',
-                  padding: '7px 12px',
-                  outline: 'none',
-                  minWidth: 200,
-                }}
-              />
-              <button
-                onClick={() => renameMutation.mutate(nameInput)}
-                disabled={renameMutation.isPending || !nameInput.trim()}
-                style={{
-                  ...MONO,
-                  fontSize: 10,
-                  letterSpacing: '0.12em',
-                  padding: '7px 16px',
-                  background: '#FFCD32',
-                  color: '#0D0D0D',
-                  border: 'none',
-                  cursor: 'pointer',
-                  opacity: renameMutation.isPending ? 0.5 : 1,
-                }}
-              >
-                {renameMutation.isPending ? '...' : 'SAVE'}
-              </button>
-              <button
-                onClick={() => { setRenaming(false); setRenameError('') }}
-                style={{
-                  ...MONO,
-                  fontSize: 10,
-                  letterSpacing: '0.12em',
-                  padding: '7px 14px',
-                  background: 'transparent',
-                  color: '#555',
-                  border: '1px solid #2A2A2A',
-                  cursor: 'pointer',
-                }}
-              >
-                CANCEL
-              </button>
-            </div>
-          )}
-          {renameError && (
-            <p style={{ ...MONO, fontSize: 11, color: '#EF4444', marginTop: 8, letterSpacing: '0.06em' }}>
-              {renameError}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Lifecycle buttons */}
-      {actions.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-          {actions.map(btn => (
-            <button
-              key={btn.action}
-              onClick={() => mutations[btn.action].mutate()}
-              disabled={acting}
-              style={{
-                ...MONO,
-                fontSize: 10,
-                letterSpacing: '0.12em',
-                padding: '8px 18px',
-                background: btn.filled ? '#FFCD32' : 'transparent',
-                color: btn.filled ? '#0D0D0D' : btn.color,
-                border: `1px solid ${btn.borderColor}`,
-                cursor: acting ? 'not-allowed' : 'pointer',
-                opacity: acting ? 0.5 : 1,
-              }}
-            >
-              {mutations[btn.action].isPending ? '...' : btn.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {actionError && (
-        <p style={{ ...MONO, fontSize: 11, color: '#EF4444', marginBottom: 18, letterSpacing: '0.08em' }}>
-          {actionError}
-        </p>
-      )}
-
-      {/* Payout / settlement */}
-      {account.Status === 'active' && (
-        <div style={{ marginBottom: 20 }}>
+          {/* State history */}
           <button
-            onClick={() => { setPayoutOpen(v => !v); setSettleResult(null); setSettleErr('') }}
-            style={{
-              ...MONO,
-              fontSize: 10,
-              letterSpacing: '0.12em',
-              padding: '8px 18px',
-              background: 'transparent',
-              color: '#FFCD32',
-              border: '1px solid #3A3A1A',
-              cursor: 'pointer',
-            }}
+            onClick={() => setShowHistory(v => !v)}
+            style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '8px 16px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: showHistory ? 16 : 0 }}
           >
-            {payoutOpen ? 'CLOSE PAYOUT' : 'INITIATE PAYOUT'}
+            {showHistory ? 'HIDE HISTORY' : 'VIEW HISTORY'}
           </button>
 
-          {payoutOpen && (
-            <div style={{ marginTop: 12, border: '1px solid #2A2A2A', padding: '20px 20px 20px' }}>
-              <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.18em', color: '#555', marginBottom: 18 }}>
-                SETTLEMENT
+          {showHistory && (
+            <div style={{ borderLeft: '2px solid var(--border)', paddingLeft: 18, marginTop: 16 }}>
+              <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-faint)', marginBottom: 14 }}>
+                ACCOUNT STATE HISTORY
               </div>
-
-              {settleResult ? (
-                <div>
-                  <div style={{ ...MONO, fontSize: 11, color: '#22c55e', letterSpacing: '0.08em', marginBottom: 14 }}>
-                    QUEUED ✓
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
-                    <div>
-                      <div style={{ ...MONO, fontSize: 9, color: '#555', letterSpacing: '0.12em', marginBottom: 3 }}>MERCHANT REF</div>
-                      <div style={{ ...MONO, fontSize: 12, color: '#C0C0C0', letterSpacing: '0.06em' }}>{settleResult.merchantTxRef}</div>
-                    </div>
-                    <div>
-                      <div style={{ ...MONO, fontSize: 9, color: '#555', letterSpacing: '0.12em', marginBottom: 3 }}>AMOUNT</div>
-                      <div style={{ ...MONO, fontSize: 16, color: '#FFCD32' }}>
-                        ₦{Number(settleResult.amount).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSettleResult(null)}
-                    style={{
-                      ...MONO,
-                      fontSize: 10,
-                      letterSpacing: '0.12em',
-                      padding: '7px 14px',
-                      background: 'transparent',
-                      color: '#888',
-                      border: '1px solid #2A2A2A',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    NEW PAYOUT
-                  </button>
-                </div>
+              {(historyData?.history ?? []).length === 0 ? (
+                <span style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)' }}>No history yet.</span>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 380 }}>
-
-                  {/* Bank */}
-                  <div>
-                    <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: '#888', marginBottom: 6 }}>BANK</div>
-                    <select
-                      value={payBankCode}
-                      onChange={e => {
-                        const code = e.target.value
-                        setPayBankCode(code)
-                        setLookedUpAccount(null)
-                        setLookupErr('')
-                        triggerLookup(payAccountNumber, code)
-                      }}
-                      style={{
-                        ...MONO,
-                        fontSize: 12,
-                        background: '#0A0A0A',
-                        border: '1px solid #3A3A3A',
-                        color: payBankCode ? '#C0C0C0' : '#555',
-                        padding: '7px 12px',
-                        outline: 'none',
-                        width: '100%',
-                      }}
-                    >
-                      <option value="">Select bank...</option>
-                      {(banksData?.banks ?? []).map(b => (
-                        <option key={b.Code} value={b.Code}>{b.Name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Account number */}
-                  <div>
-                    <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: '#888', marginBottom: 6 }}>ACCOUNT NUMBER</div>
-                    <input
-                      type="text"
-                      value={payAccountNumber}
-                      maxLength={10}
-                      onChange={e => handleAccountNumberChange(e.target.value.replace(/\D/g, ''))}
-                      onBlur={() => triggerLookup(payAccountNumber, payBankCode)}
-                      placeholder="10 digits"
-                      style={{
-                        ...MONO,
-                        fontSize: 12,
-                        background: '#0A0A0A',
-                        border: '1px solid #3A3A3A',
-                        color: '#C0C0C0',
-                        padding: '7px 12px',
-                        outline: 'none',
-                        width: '100%',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                    {lookupMutation.isPending && (
-                      <div style={{ ...MONO, fontSize: 10, color: '#555', marginTop: 4 }}>verifying...</div>
-                    )}
-                    {lookedUpAccount && (
-                      <div style={{ ...MONO, fontSize: 11, color: '#22c55e', marginTop: 4, letterSpacing: '0.06em' }}>
-                        ✓ {lookedUpAccount.AccountName}
-                      </div>
-                    )}
-                    {lookupErr && (
-                      <div style={{ ...MONO, fontSize: 11, color: '#EF4444', marginTop: 4 }}>{lookupErr}</div>
-                    )}
-                  </div>
-
-                  {/* Amount */}
-                  <div>
-                    <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: '#888', marginBottom: 6 }}>AMOUNT (NGN)</div>
-                    <input
-                      type="text"
-                      value={payAmount}
-                      onChange={e => setPayAmount(e.target.value)}
-                      placeholder="e.g. 5000.00"
-                      style={{
-                        ...MONO,
-                        fontSize: 12,
-                        background: '#0A0A0A',
-                        border: '1px solid #3A3A3A',
-                        color: '#C0C0C0',
-                        padding: '7px 12px',
-                        outline: 'none',
-                        width: '100%',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                  </div>
-
-                  {/* Narration */}
-                  <div>
-                    <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: '#888', marginBottom: 6 }}>
-                      NARRATION <span style={{ color: '#444' }}>(optional)</span>
+                (historyData?.history ?? []).map(entry => (
+                  <div key={entry.ID} style={{ display: 'flex', gap: 14, marginBottom: 12, alignItems: 'flex-start' }}>
+                    <div style={{ ...MONO, fontSize: 10, color: 'var(--text-faint)', whiteSpace: 'nowrap', paddingTop: 1 }}>
+                      {new Date(entry.CreatedAt).toLocaleDateString('en-NG', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
-                    <input
-                      type="text"
-                      value={payNarration}
-                      onChange={e => setPayNarration(e.target.value)}
-                      placeholder="Transfer description"
-                      style={{
-                        ...MONO,
-                        fontSize: 12,
-                        background: '#0A0A0A',
-                        border: '1px solid #3A3A3A',
-                        color: '#C0C0C0',
-                        padding: '7px 12px',
-                        outline: 'none',
-                        width: '100%',
-                        boxSizing: 'border-box',
-                      }}
-                    />
+                    <div>
+                      <div style={{ ...MONO, fontSize: 11, color: 'var(--text)', letterSpacing: '0.06em' }}>
+                        {entry.FromStatus ? `${entry.FromStatus.toUpperCase()} → ` : ''}{entry.ToStatus.toUpperCase()}
+                      </div>
+                      {entry.Reason && (
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{entry.Reason}</div>
+                      )}
+                    </div>
                   </div>
-
-                  {settleErr && (
-                    <p style={{ ...MONO, fontSize: 11, color: '#EF4444', letterSpacing: '0.06em' }}>{settleErr}</p>
-                  )}
-
-                  <button
-                    onClick={() => settleMutation.mutate()}
-                    disabled={!lookedUpAccount || !payAmount || !payBankCode || settleMutation.isPending}
-                    style={{
-                      ...MONO,
-                      fontSize: 10,
-                      letterSpacing: '0.12em',
-                      padding: '9px 20px',
-                      background: (lookedUpAccount && payAmount && payBankCode) ? '#FFCD32' : '#1A1A1A',
-                      color: (lookedUpAccount && payAmount && payBankCode) ? '#0D0D0D' : '#444',
-                      border: 'none',
-                      cursor: (lookedUpAccount && payAmount && payBankCode && !settleMutation.isPending) ? 'pointer' : 'not-allowed',
-                      opacity: settleMutation.isPending ? 0.5 : 1,
-                      width: 'fit-content',
-                    }}
-                  >
-                    {settleMutation.isPending ? 'QUEUING...' : 'CONFIRM & SETTLE'}
-                  </button>
-                </div>
+                ))
               )}
             </div>
           )}
         </div>
-      )}
 
-      {/* View Statement */}
-      <Link
-        to={`/accounts/${accountRef}/statement`}
-        style={{
-          ...MONO,
-          fontSize: 10,
-          letterSpacing: '0.12em',
-          color: '#FFCD32',
-          textDecoration: 'none',
-          border: '1px solid #3A3A1A',
-          padding: '9px 20px',
-          display: 'inline-block',
-          background: 'rgba(255,205,50,0.04)',
-          marginRight: 10,
-        }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = '#FFCD32' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = '#3A3A1A' }}
-      >
-        VIEW STATEMENT →
-      </Link>
+        {/* ── Right: balance + actions ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-      {/* History toggle */}
-      <button
-        onClick={() => setShowHistory(v => !v)}
-        style={{
-          ...MONO,
-          fontSize: 10,
-          letterSpacing: '0.12em',
-          padding: '9px 20px',
-          background: 'transparent',
-          color: '#888888',
-          border: '1px solid #2A2A2A',
-          cursor: 'pointer',
-        }}
-      >
-        {showHistory ? 'HIDE HISTORY' : 'VIEW HISTORY'}
-      </button>
-
-      {/* State history */}
-      {showHistory && (
-        <div style={{ marginTop: 24, borderLeft: '2px solid #2A2A2A', paddingLeft: 20 }}>
-          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: '#555', marginBottom: 16 }}>
-            ACCOUNT STATE HISTORY
-          </div>
-          {(historyData?.history ?? []).length === 0 ? (
-            <span style={{ ...MONO, fontSize: 11, color: '#555' }}>No history yet.</span>
-          ) : (
-            (historyData?.history ?? []).map(entry => (
-              <div key={entry.ID} style={{ display: 'flex', gap: 16, marginBottom: 14, alignItems: 'flex-start' }}>
-                <div style={{ ...MONO, fontSize: 10, color: '#555', whiteSpace: 'nowrap', paddingTop: 1 }}>
-                  {new Date(entry.CreatedAt).toLocaleDateString('en-NG', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </div>
-                <div>
-                  <div style={{ ...MONO, fontSize: 11, color: '#C0C0C0', letterSpacing: '0.06em' }}>
-                    {entry.FromStatus ? `${entry.FromStatus.toUpperCase()} → ` : ''}{entry.ToStatus.toUpperCase()}
-                  </div>
-                  {entry.Reason && (
-                    <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{entry.Reason}</div>
-                  )}
-                </div>
+          {/* Balance card */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '20px 20px' }}>
+            <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-muted)', marginBottom: 6 }}>BALANCE</div>
+            {balanceData ? (
+              <div style={{ ...MONO, fontSize: 26, color: 'var(--accent)', letterSpacing: '0.02em', lineHeight: 1 }}>
+                ₦{Number(balanceData.balance).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
               </div>
-            ))
+            ) : (
+              <div style={{ ...MONO, fontSize: 22, color: 'var(--text-faint)' }}>—</div>
+            )}
+          </div>
+
+          {/* Rename form */}
+          {account.Status === 'active' && (
+            <div>
+              {!renaming ? (
+                <button
+                  onClick={() => { setRenaming(true); setNameInput(account.BankAccountName ?? '') }}
+                  style={{ ...btn('ghost'), width: '100%', textAlign: 'left' }}
+                >
+                  RENAME ACCOUNT
+                </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <input
+                    type="text"
+                    value={nameInput}
+                    onChange={e => setNameInput(e.target.value)}
+                    placeholder="New account name"
+                    style={inputStyle}
+                    autoFocus
+                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => renameMutation.mutate(nameInput)}
+                      disabled={renameMutation.isPending || !nameInput.trim()}
+                      style={{ ...btn('primary'), flex: 1, opacity: renameMutation.isPending ? 0.5 : 1 }}
+                    >
+                      {renameMutation.isPending ? '...' : 'SAVE'}
+                    </button>
+                    <button onClick={() => { setRenaming(false); setRenameError('') }} style={{ ...btn('ghost') }}>
+                      CANCEL
+                    </button>
+                  </div>
+                  {renameError && <p style={{ ...MONO, fontSize: 11, color: 'var(--red)' }}>{renameError}</p>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Payout */}
+          {account.Status === 'active' && (
+            <button
+              onClick={() => { setPayoutOpen(true); setSettleResult(null); setSettleErr('') }}
+              style={{ ...btn('outline'), width: '100%', textAlign: 'left' }}
+            >
+              INITIATE PAYOUT →
+            </button>
+          )}
+
+          {/* Statement */}
+          <Link
+            to={`/accounts/${accountRef}/statement`}
+            style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '8px 16px', color: 'var(--text-muted)', border: '1px solid var(--border)', textDecoration: 'none', display: 'block' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          >
+            VIEW STATEMENT →
+          </Link>
+
+          {/* Expire */}
+          {account.Status === 'active' && (
+            <button
+              onClick={() => setShowExpireConfirm(true)}
+              style={{ ...btn('danger'), width: '100%', textAlign: 'left', marginTop: 8 }}
+            >
+              EXPIRE ACCOUNT
+            </button>
+          )}
+
+          {expireMutation.error && (
+            <p style={{ ...MONO, fontSize: 11, color: 'var(--red)' }}>{expireMutation.error.message}</p>
           )}
         </div>
+      </div>
+
+      {/* ── Expire confirmation modal ── */}
+      {showExpireConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: 32, maxWidth: 440, width: '90%' }}>
+            <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: 'var(--red)', marginBottom: 12 }}>
+              IRREVERSIBLE ACTION
+            </div>
+            <h3 style={{ ...MONO, fontSize: 15, color: 'var(--text)', letterSpacing: '0.04em', marginBottom: 12 }}>
+              Expire Account?
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 8 }}>
+              This will permanently expire <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{account.BankAccountNumber}</strong>.
+            </p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 24 }}>
+              The account will stop accepting payments and cannot be reactivated.
+            </p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => setShowExpireConfirm(false)}
+                style={{ ...btn('ghost'), flex: 1 }}
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={() => { expireMutation.mutate(); setShowExpireConfirm(false) }}
+                disabled={expireMutation.isPending}
+                style={{ ...btn('danger'), flex: 1, opacity: expireMutation.isPending ? 0.5 : 1 }}
+              >
+                {expireMutation.isPending ? 'EXPIRING...' : 'CONFIRM EXPIRE'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Payout slide-in panel ── */}
+      {payoutOpen && (
+        <>
+          <div
+            onClick={() => setPayoutOpen(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 40 }}
+          />
+          <div style={{
+            position: 'fixed', top: 0, right: 0, height: '100vh', width: 420,
+            background: 'var(--surface)', borderLeft: '1px solid var(--border)',
+            zIndex: 50, overflowY: 'auto', padding: '32px 28px',
+          }}>
+            {/* Panel header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+              <div>
+                <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 3 }}>OUTBOUND</div>
+                <div style={{ ...MONO, fontSize: 14, color: 'var(--text)', letterSpacing: '0.06em' }}>SETTLEMENT</div>
+              </div>
+              <button onClick={() => setPayoutOpen(false)} style={{ ...MONO, fontSize: 18, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+
+            {settleResult ? (
+              /* Success state */
+              <div>
+                <div style={{ ...MONO, fontSize: 11, color: 'var(--green)', letterSpacing: '0.08em', marginBottom: 20 }}>QUEUED ✓</div>
+                <div style={{ border: '1px solid var(--border)', padding: 20, marginBottom: 20 }}>
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ ...MONO, fontSize: 9, color: 'var(--text-faint)', letterSpacing: '0.12em', marginBottom: 4 }}>MERCHANT REF</div>
+                    <div style={{ ...MONO, fontSize: 11, color: 'var(--text)', letterSpacing: '0.06em', wordBreak: 'break-all' }}>{settleResult.merchantTxRef}</div>
+                  </div>
+                  <div>
+                    <div style={{ ...MONO, fontSize: 9, color: 'var(--text-faint)', letterSpacing: '0.12em', marginBottom: 4 }}>AMOUNT</div>
+                    <div style={{ ...MONO, fontSize: 22, color: 'var(--accent)' }}>
+                      ₦{Number(settleResult.amount).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 20 }}>
+                  The transfer has been queued. It will be processed within seconds. Check the statement for confirmation.
+                </p>
+                <button onClick={() => setSettleResult(null)} style={{ ...btn('ghost'), width: '100%' }}>
+                  NEW PAYOUT
+                </button>
+              </div>
+            ) : (
+              /* Form */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+                {/* Bank */}
+                <div>
+                  <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>BANK</div>
+                  <select
+                    value={payBankCode}
+                    onChange={e => {
+                      const code = e.target.value
+                      setPayBankCode(code)
+                      setLookedUpAccount(null)
+                      setLookupErr('')
+                      triggerLookup(payAccountNumber, code)
+                    }}
+                    style={{ ...inputStyle, width: '100%' }}
+                  >
+                    <option value="">Select bank...</option>
+                    {(banksData?.banks ?? []).map(b => (
+                      <option key={b.Code} value={b.Code}>{b.Name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Account number */}
+                <div>
+                  <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>ACCOUNT NUMBER</div>
+                  <input
+                    type="text"
+                    value={payAccountNumber}
+                    maxLength={10}
+                    onChange={e => handleAccountNumberChange(e.target.value.replace(/\D/g, ''))}
+                    onBlur={() => triggerLookup(payAccountNumber, payBankCode)}
+                    placeholder="10 digits"
+                    style={inputStyle}
+                  />
+                  {lookupMutation.isPending && (
+                    <div style={{ ...MONO, fontSize: 10, color: 'var(--text-faint)', marginTop: 4 }}>verifying...</div>
+                  )}
+                  {lookedUpAccount && (
+                    <div style={{ ...MONO, fontSize: 11, color: 'var(--green)', marginTop: 4, letterSpacing: '0.06em' }}>
+                      ✓ {lookedUpAccount.AccountName}
+                    </div>
+                  )}
+                  {lookupErr && (
+                    <div style={{ ...MONO, fontSize: 11, color: 'var(--red)', marginTop: 4 }}>{lookupErr}</div>
+                  )}
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>AMOUNT (NGN)</div>
+                  <input
+                    type="text"
+                    value={payAmount}
+                    onChange={e => setPayAmount(e.target.value)}
+                    placeholder="e.g. 5000.00"
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* Narration */}
+                <div>
+                  <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>
+                    NARRATION <span style={{ color: 'var(--text-faint)' }}>(optional)</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={payNarration}
+                    onChange={e => setPayNarration(e.target.value)}
+                    placeholder="Transfer description"
+                    style={inputStyle}
+                  />
+                </div>
+
+                {settleErr && (
+                  <p style={{ ...MONO, fontSize: 11, color: 'var(--red)' }}>{settleErr}</p>
+                )}
+
+                <button
+                  onClick={() => settleMutation.mutate()}
+                  disabled={!lookedUpAccount || !payAmount || !payBankCode || settleMutation.isPending}
+                  style={{
+                    ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '11px 20px',
+                    background: (lookedUpAccount && payAmount && payBankCode) ? 'var(--accent)' : 'var(--surface-raised)',
+                    color: (lookedUpAccount && payAmount && payBankCode) ? 'var(--accent-fg)' : 'var(--text-faint)',
+                    border: 'none',
+                    cursor: (lookedUpAccount && payAmount && payBankCode && !settleMutation.isPending) ? 'pointer' : 'not-allowed',
+                    opacity: settleMutation.isPending ? 0.5 : 1,
+                    width: '100%',
+                  }}
+                >
+                  {settleMutation.isPending ? 'QUEUING...' : 'CONFIRM & SETTLE'}
+                </button>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   )
