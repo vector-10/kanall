@@ -2,9 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 	"github.com/vector-10/kanall/internal/apierror"
 	"github.com/vector-10/kanall/internal/middleware"
@@ -85,6 +87,10 @@ func (h *SettlementHandler) Settle(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.settlement.Settle(r.Context(), tenant.ID, accountRef, amount, req.BankCode, req.AccountNumber, req.Narration)
 	if err != nil {
+		if errors.Is(err, service.ErrInsufficientFunds) {
+			apierror.Respond(w, apierror.BadRequest("insufficient funds: balance is less than the requested amount"))
+			return
+		}
 		internalError(w, r, err)
 		return
 	}
@@ -95,5 +101,31 @@ func (h *SettlementHandler) Settle(w http.ResponseWriter, r *http.Request) {
 		"amount":        result.Amount.StringFixed(2),
 		"currency":      result.Currency,
 		"accountRef":    result.AccountRef,
+	})
+}
+
+func (h *SettlementHandler) GetTransferStatus(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenant(r.Context())
+	ref := chi.URLParam(r, "merchantTxRef")
+
+	job, err := h.settlement.GetTransferStatus(r.Context(), tenant.ID, ref)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			apierror.Respond(w, apierror.NotFound("transfer not found"))
+			return
+		}
+		internalError(w, r, err)
+		return
+	}
+
+	apierror.WriteJSON(w, http.StatusOK, map[string]any{
+		"merchantTxRef": job.MerchantTxRef,
+		"status":        job.Status,
+		"amount":        job.AmountNaira.StringFixed(2),
+		"currency":      "NGN",
+		"attemptCount":  job.AttemptCount,
+		"lastError":     job.LastError,
+		"createdAt":     job.CreatedAt,
+		"updatedAt":     job.UpdatedAt,
 	})
 }

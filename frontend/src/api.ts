@@ -133,6 +133,24 @@ export interface CustomersResponse {
   pagination: { limit: number; nextCursor: string | null; hasMore: boolean }
 }
 
+export interface Bank {
+  Code: string
+  Name: string
+}
+
+export interface BankAccount {
+  AccountNumber: string
+  AccountName: string
+}
+
+export interface SettleResult {
+  merchantTxRef: string
+  status: string
+  amount: string
+  currency: string
+  accountRef: string
+}
+
 export const api = {
   health: (): Promise<boolean> =>
     fetch(BASE + '/health', { credentials: 'include' })
@@ -227,6 +245,22 @@ export const api = {
 
     misdirected: () =>
       request<{ events: WebhookEvent[] | null }>('GET', '/auth/misdirected'),
+  },
+
+  settlement: {
+    listBanks: () =>
+      request<{ banks: Bank[] }>('GET', '/v1/transfers/banks'),
+
+    lookup: (accountNumber: string, bankCode: string) =>
+      request<BankAccount>('POST', '/v1/transfers/lookup', { accountNumber, bankCode }),
+
+    settle: (accountRef: string, amount: string, bankCode: string, accountNumber: string, narration?: string) =>
+      request<SettleResult>('POST', `/v1/accounts/${accountRef}/settle`, {
+        amount,
+        bankCode,
+        accountNumber,
+        ...(narration ? { narration } : {}),
+      }),
   },
 
   // kept for backwards compat with existing call sites

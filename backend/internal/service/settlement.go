@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -10,6 +11,8 @@ import (
 	"github.com/vector-10/kanall/internal/provider"
 	"github.com/vector-10/kanall/internal/repository"
 )
+
+var ErrInsufficientFunds = errors.New("insufficient funds")
 
 type SettlementService struct {
 	store    *repository.Store
@@ -46,6 +49,14 @@ func (s *SettlementService) Settle(
 	va, err := s.store.Accounts.GetByAccountRef(ctx, tenantID, accountRef)
 	if err != nil {
 		return SettleResult{}, fmt.Errorf("account not found: %w", err)
+	}
+
+	balance, err := s.store.Ledger.GetBalance(ctx, tenantID, va.ID)
+	if err != nil {
+		return SettleResult{}, fmt.Errorf("balance check failed: %w", err)
+	}
+	if balance.LessThan(amount) {
+		return SettleResult{}, ErrInsufficientFunds
 	}
 
 	looked, err := s.provider.LookupAccount(ctx, accountNumber, bankCode)
@@ -109,4 +120,8 @@ func (s *SettlementService) Settle(
 		Currency:      "NGN",
 		AccountRef:    accountRef,
 	}, nil
+}
+
+func (s *SettlementService) GetTransferStatus(ctx context.Context, tenantID uuid.UUID, ref string) (*model.SettlementJob, error) {
+	return s.store.SettlementJobs.GetByMerchantTxRef(ctx, tenantID, ref)
 }

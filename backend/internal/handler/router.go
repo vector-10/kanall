@@ -98,6 +98,7 @@ func NewRouter(
 
 		r.With(accountReadRL.ByAPIKey).Get("/transfers/banks", settlementH.ListBanks)
 		r.With(accountWriteRL.ByAPIKey).Post("/transfers/lookup", settlementH.LookupAccount)
+		r.With(accountReadRL.ByAPIKey).Get("/transfers/{merchantTxRef}", settlementH.GetTransferStatus)
 		r.With(accountWriteRL.ByAPIKey).Post("/accounts/{accountRef}/settle", settlementH.Settle)
 	})
 

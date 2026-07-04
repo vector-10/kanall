@@ -70,6 +70,15 @@ func (w *SettlementWorker) process(ctx context.Context, job model.SettlementJob)
 		return
 	}
 
+	// On retry: check current status before re-submitting to avoid double disbursement.
+	// If Requery errors (not found), fall through to Transfer — first attempt may not have landed.
+	if job.AttemptCount > 0 {
+		if result, err := w.provider.Requery(ctx, job.MerchantTxRef); err == nil {
+			w.handleResult(ctx, job, result)
+			return
+		}
+	}
+
 	result, err := w.provider.Transfer(ctx, provider.TransferInput{
 		AmountNaira:   mustFloat(job.AmountNaira),
 		AccountNumber: job.AccountNumber,
@@ -78,12 +87,14 @@ func (w *SettlementWorker) process(ctx context.Context, job model.SettlementJob)
 		MerchantTxRef: job.MerchantTxRef,
 		Narration:     job.Narration,
 	})
-
 	if err != nil {
 		w.fail(ctx, job, err.Error())
 		return
 	}
+	w.handleResult(ctx, job, result)
+}
 
+func (w *SettlementWorker) handleResult(ctx context.Context, job model.SettlementJob, result provider.TransferResult) {
 	switch result.Status {
 	case "SUCCESS":
 		if err := w.store.SettlementJobs.UpdateAfterAttempt(ctx, job.ID, "completed", nil, nil); err != nil {
@@ -103,7 +114,6 @@ func (w *SettlementWorker) process(ctx context.Context, job model.SettlementJob)
 		log.Printf("settlement worker: refunded job %s ref=%s", job.ID, job.MerchantTxRef)
 
 	default:
-		// PENDING_BILLING or NEW — transfer is in flight, retry to check
 		w.fail(ctx, job, "transfer status: "+result.Status)
 	}
 }

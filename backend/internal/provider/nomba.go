@@ -386,6 +386,37 @@ func (n *NombaProvider) Transfer(ctx context.Context, input TransferInput) (Tran
 	}, nil
 }
 
+func (n *NombaProvider) Requery(ctx context.Context, merchantTxRef string) (TransferResult, error) {
+	path := fmt.Sprintf("/v1/transactions/accounts/%s/single?transactionRef=%s",
+		n.cfg.NombaSubAccountID, merchantTxRef)
+	resp, err := n.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return TransferResult{}, err
+	}
+	defer resp.Body.Close()
+	rb, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return TransferResult{}, fmt.Errorf("nomba requery failed: status %d: %s", resp.StatusCode, rb)
+	}
+	var out struct {
+		Code string `json:"code"`
+		Data struct {
+			ID     string `json:"id"`
+			Status string `json:"status"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(rb, &out); err != nil {
+		return TransferResult{}, err
+	}
+	if out.Code != "00" {
+		return TransferResult{}, fmt.Errorf("nomba requery: code %s", out.Code)
+	}
+	if out.Data.Status == "" {
+		return TransferResult{}, fmt.Errorf("nomba requery: empty status")
+	}
+	return TransferResult{ID: out.Data.ID, Status: out.Data.Status, MerchantTxRef: merchantTxRef}, nil
+}
+
 func (n *NombaProvider) FetchTransactions(ctx context.Context, from, to time.Time) ([]Transaction, error) {
 	const layout = "2006-01-02T15:04:05"
 	var all []Transaction

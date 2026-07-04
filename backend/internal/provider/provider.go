@@ -14,6 +14,7 @@ type VirtualAccountProvider interface {
 	ListBanks(ctx context.Context) ([]Bank, error)
 	LookupAccount(ctx context.Context, accountNumber, bankCode string) (BankAccount, error)
 	Transfer(ctx context.Context, input TransferInput) (TransferResult, error)
+	Requery(ctx context.Context, merchantTxRef string) (TransferResult, error)
 }
 
 type Bank struct {
