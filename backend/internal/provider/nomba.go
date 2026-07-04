@@ -285,6 +285,107 @@ func (n *NombaProvider) Expire(ctx context.Context, accountRef string) error {
 	return nil
 }
 
+func (n *NombaProvider) ListBanks(ctx context.Context) ([]Bank, error) {
+	resp, err := n.doRequest(ctx, http.MethodGet, "/v1/transfers/banks", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		rb, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("nomba list banks failed: status %d: %s", resp.StatusCode, rb)
+	}
+	var out struct {
+		Data struct {
+			Results []struct {
+				Code string `json:"code"`
+				Name string `json:"name"`
+			} `json:"results"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, err
+	}
+	banks := make([]Bank, len(out.Data.Results))
+	for i, b := range out.Data.Results {
+		banks[i] = Bank{Code: b.Code, Name: b.Name}
+	}
+	return banks, nil
+}
+
+func (n *NombaProvider) LookupAccount(ctx context.Context, accountNumber, bankCode string) (BankAccount, error) {
+	resp, err := n.doRequest(ctx, http.MethodPost, "/v1/transfers/bank/lookup", map[string]string{
+		"accountNumber": accountNumber,
+		"bankCode":      bankCode,
+	})
+	if err != nil {
+		return BankAccount{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		rb, _ := io.ReadAll(resp.Body)
+		return BankAccount{}, fmt.Errorf("nomba account lookup failed: status %d: %s", resp.StatusCode, rb)
+	}
+	var out struct {
+		Code string `json:"code"`
+		Data struct {
+			AccountNumber string `json:"accountNumber"`
+			AccountName   string `json:"accountName"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return BankAccount{}, err
+	}
+	if out.Code != "00" {
+		return BankAccount{}, fmt.Errorf("account lookup failed: code %s", out.Code)
+	}
+	return BankAccount{
+		AccountNumber: out.Data.AccountNumber,
+		AccountName:   out.Data.AccountName,
+	}, nil
+}
+
+func (n *NombaProvider) Transfer(ctx context.Context, input TransferInput) (TransferResult, error) {
+	body := map[string]any{
+		"amount":        input.AmountNaira,
+		"accountNumber": input.AccountNumber,
+		"accountName":   input.AccountName,
+		"bankCode":      input.BankCode,
+		"merchantTxRef": input.MerchantTxRef,
+	}
+	if input.SenderName != "" {
+		body["senderName"] = input.SenderName
+	}
+	if input.Narration != "" {
+		body["narration"] = input.Narration
+	}
+
+	path := "/v2/transfers/bank/" + n.cfg.NombaSubAccountID
+	resp, err := n.doRequest(ctx, http.MethodPost, path, body)
+	if err != nil {
+		return TransferResult{}, err
+	}
+	defer resp.Body.Close()
+	rb, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return TransferResult{}, fmt.Errorf("nomba transfer failed: status %d: %s", resp.StatusCode, rb)
+	}
+	var out struct {
+		Data struct {
+			ID     string `json:"id"`
+			Status string `json:"status"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(rb, &out); err != nil {
+		return TransferResult{}, err
+	}
+	return TransferResult{
+		ID:            out.Data.ID,
+		Status:        out.Data.Status,
+		MerchantTxRef: input.MerchantTxRef,
+	}, nil
+}
+
 func (n *NombaProvider) FetchTransactions(ctx context.Context, from, to time.Time) ([]Transaction, error) {
 	const layout = "2006-01-02T15:04:05"
 	var all []Transaction

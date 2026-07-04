@@ -68,6 +68,9 @@ func main() {
 	outboxWorker := service.NewOutboxWorker(store, cfg.OutboxHTTPTimeout, cfg.EncryptionKey)
 	go outboxWorker.Start(ctx)
 
+	settlementWorker := service.NewSettlementWorker(store, p)
+	go settlementWorker.Start(ctx)
+
 	health := func(w http.ResponseWriter, r *http.Request) {
 		if err := pool.Ping(r.Context()); err != nil {
 			apierror.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{

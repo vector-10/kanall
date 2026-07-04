@@ -66,6 +66,43 @@ func (r *LedgerRepo) PostDoubleEntry(ctx context.Context, credit, debit model.Le
 	return true, tx.Commit(ctx)
 }
 
+func (r *LedgerRepo) PostSettlementIntent(ctx context.Context, debit, credit model.LedgerEntry, job model.SettlementJob) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	const insertEntry = `
+		INSERT INTO ledger_entries
+			(id, tenant_id, transaction_group_id, nomba_txn_ref, account_type, account_id,
+			 direction, amount, fee, currency, status, reverses_group_id, narration)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+	`
+	for _, e := range []model.LedgerEntry{debit, credit} {
+		if _, err := tx.Exec(ctx, insertEntry,
+			e.ID, e.TenantID, e.TransactionGroupID, e.NombaTxnRef,
+			e.AccountType, e.AccountID, e.Direction, e.Amount, e.Fee,
+			e.Currency, e.Status, e.ReversesGroupID, e.Narration,
+		); err != nil {
+			return err
+		}
+	}
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO settlement_jobs
+			(id, tenant_id, virtual_account_id, transaction_group_id, merchant_tx_ref,
+			 amount_naira, bank_code, account_number, account_name, narration, status)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+	`, job.ID, job.TenantID, job.VirtualAccountID, job.TransactionGroupID, job.MerchantTxRef,
+		job.AmountNaira, job.BankCode, job.AccountNumber, job.AccountName, job.Narration, job.Status)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
 func (r *LedgerRepo) ConfirmByTxnRef(ctx context.Context, nombaTxnRef string) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE ledger_entries SET status = 'confirmed'
