@@ -151,7 +151,7 @@ func (s *ProvisioningService) getOrCreateCustomer(ctx context.Context, input Pro
 	}
 
 	if err := s.store.Customers.Create(ctx, c); err != nil {
-		// concurrent request already created this customer — re-fetch and treat as existing
+
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			existing, fetchErr := s.store.Customers.GetByExternalRef(ctx, input.TenantID, input.ExternalRef)

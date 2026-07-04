@@ -2,8 +2,7 @@ package email
 
 import "fmt"
 
-// OTPVerificationHTML returns the HTML body for the email verification message
-// sent immediately after a tenant registers. The OTP expires in 15 minutes.
+
 func OTPVerificationHTML(name, otp string) string {
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">

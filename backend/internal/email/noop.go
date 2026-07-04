@@ -5,8 +5,6 @@ import (
 	"log"
 )
 
-// NoopSender is used when BREVO_API_KEY is not configured.
-// It logs what would have been sent so dev stays unblocked without real credentials.
 type NoopSender struct{}
 
 func NewNoopSender() *NoopSender { return &NoopSender{} }

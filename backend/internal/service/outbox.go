@@ -45,7 +45,7 @@ func NewOutboxWorker(store *repository.Store, httpTimeout time.Duration, encrypt
 
 func (w *OutboxWorker) Start(ctx context.Context) {
 	log.Println("outbox: worker started")
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -107,9 +107,7 @@ func (w *OutboxWorker) deliver(ctx context.Context, d model.TenantWebhookDeliver
 	w.fail(ctx, d, fmt.Sprintf("non-2xx: %d", resp.StatusCode))
 }
 
-// buildSignature looks up the tenant's webhook secret and returns the
-// X-Kanall-Signature header value. Returns ("", false) if the tenant has
-// no secret configured or if decryption fails.
+
 func (w *OutboxWorker) buildSignature(ctx context.Context, d model.TenantWebhookDelivery) (string, bool) {
 	if w.encryptionKey == "" {
 		return "", false

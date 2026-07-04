@@ -10,9 +10,7 @@ import (
 	"time"
 )
 
-// BrevoSender delivers email via Brevo's transactional API.
-// endpoint comes from config (BREVO_API_URL) so it can be overridden without
-// touching code — same pattern as NOMBA_BASE_URL.
+
 type BrevoSender struct {
 	apiKey    string
 	endpoint  string

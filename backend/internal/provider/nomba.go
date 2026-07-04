@@ -33,7 +33,7 @@ type nombaAuthResponse struct {
 	Data struct {
 		AccessToken  string `json:"access_token"`
 		RefreshToken string `json:"refresh_token"`
-		ExpiresAt    string `json:"expiresAt"` // ISO-8601 timestamp
+		ExpiresAt    string `json:"expiresAt"`
 	} `json:"data"`
 }
 
@@ -171,7 +171,7 @@ type nombaVAResponse struct {
 		BankAccountNumber string `json:"bankAccountNumber"`
 		BankAccountName   string `json:"bankAccountName"`
 		Currency          string `json:"currency"`
-		ExpiryDate        string `json:"expiryDate"` // "2026-08-30T12:15:00" — no timezone
+		ExpiryDate        string `json:"expiryDate"` 
 		Expired           bool   `json:"expired"`
 		CreatedAt         string `json:"createdAt"`
 	} `json:"data"`
@@ -181,8 +181,8 @@ type nombaTxnListResponse struct {
 	Data struct {
 		Results []struct {
 			TransactionID         string  `json:"transactionId"`
-			TransactionAmount     int64   `json:"transactionAmount"` // kobo
-			Fee                   float64 `json:"fee"`               // naira decimal
+			TransactionAmount     int64   `json:"transactionAmount"` 
+			Fee                   float64 `json:"fee"`               
 			Currency              string  `json:"currency"`
 			Type                  string  `json:"type"`
 			AliasAccountReference string  `json:"aliasAccountReference"`
@@ -197,7 +197,7 @@ func parseNombaVA(r nombaVAResponse) VirtualAccount {
 	va := VirtualAccount{
 		AccountRef:        r.Data.AccountRef,
 		AccountHolderID:   r.Data.AccountHolderID,
-		AccountName:       r.Data.BankAccountName, // accountName = sub-account name; customer name is in bankAccountName
+		AccountName:       r.Data.BankAccountName, 
 		BankName:          r.Data.BankName,
 		BankAccountNumber: r.Data.BankAccountNumber,
 		BankAccountName:   r.Data.BankAccountName,

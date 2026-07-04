@@ -52,21 +52,16 @@ func (s *StatementService) GetStatement(ctx context.Context, tenantID uuid.UUID,
 		return nil, fmt.Errorf("account lookup failed: %w", err)
 	}
 
-	// All-time summary — always accurate regardless of the page being viewed
 	totalCredits, totalDebits, err := s.store.Ledger.SumByAccount(ctx, tenantID, va.ID)
 	if err != nil {
 		return nil, fmt.Errorf("ledger summary failed: %w", err)
 	}
 
-	// Balance at the end of the previous page — running balances are computed
-	// relative to this so they are correct even on page 2, 3, ...
 	openingBalance, err := s.store.Ledger.OpeningBalance(ctx, tenantID, va.ID, cursorID)
 	if err != nil {
 		return nil, fmt.Errorf("opening balance failed: %w", err)
 	}
 
-	// Fetch one extra entry so we can detect whether another page exists
-	// without a separate COUNT query
 	entries, err := s.store.Ledger.ListByAccountPaginated(ctx, tenantID, va.ID, limit+1, cursorID)
 	if err != nil {
 		return nil, fmt.Errorf("ledger fetch failed: %w", err)

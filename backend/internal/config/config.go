@@ -25,15 +25,13 @@ type Config struct {
 	ConvergenceSweepInterval   time.Duration
 	OutboxHTTPTimeout          time.Duration
 	EncryptionKey              string
-	// Email (Brevo)
-	BrevoAPIKey   string
-	BrevoAPIURL   string // defaults to Brevo's transactional endpoint
-	EmailFrom     string
-	EmailFromName string
+	BrevoAPIKey                string
+	BrevoAPIURL                string
+	EmailFrom                  string
+	EmailFromName              string
 }
 
-// the function below is called once at startup, returns config struct or fatal error
-// all packages receive envs from here, no os.Getenv anywhere else
+
 func LoadConfig() (*Config, error) {
 	_ = godotenv.Load()
 
