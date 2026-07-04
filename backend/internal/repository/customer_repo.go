@@ -13,7 +13,7 @@ type CustomerRepo struct {
 	pool *pgxpool.Pool
 }
 
-const customerCols = `id, tenant_id, external_ref, name, bvn_encrypted, bvn_last4, nin_encrypted, nin_last4, kyc_tier, status, created_at, updated_at`
+const customerCols = `id, tenant_id, external_ref, name, bvn_encrypted, bvn_last4, nin_encrypted, nin_last4, nin_document_encrypted, kyc_tier, kyc_status, status, created_at, updated_at`
 
 
 func (r *CustomerRepo) Create(ctx context.Context, c *model.Customer) error {
@@ -33,7 +33,8 @@ func (r *CustomerRepo) GetByExternalRef(ctx context.Context, tenantID uuid.UUID,
 		WHERE tenant_id = $1 AND external_ref = $2
 	`, tenantID, externalRef).Scan(
 		&c.ID, &c.TenantID, &c.ExternalRef, &c.Name,
-		&c.BVNEncrypted, &c.BVNLast4, &c.NINEncrypted, &c.NINLast4, &c.KYCTier,
+		&c.BVNEncrypted, &c.BVNLast4, &c.NINEncrypted, &c.NINLast4,
+		&c.NINDocumentEncrypted, &c.KYCTier, &c.KYCStatus,
 		&c.Status, &c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
@@ -50,7 +51,7 @@ func (r *CustomerRepo) GetByID(ctx context.Context, tenantID, customerID uuid.UU
 		WHERE tenant_id = $1 AND id = $2
 	`, tenantID, customerID).Scan(
 		&c.ID, &c.TenantID, &c.ExternalRef, &c.Name,
-		&c.BVNEncrypted, &c.BVNLast4, &c.NINEncrypted, &c.NINLast4, &c.KYCTier,
+		&c.BVNEncrypted, &c.BVNLast4, &c.NINEncrypted, &c.NINLast4, &c.NINDocumentEncrypted, &c.KYCTier, &c.KYCStatus,
 		&c.Status, &c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
@@ -95,7 +96,7 @@ func (r *CustomerRepo) ListByTenant(ctx context.Context, tenantID uuid.UUID, lim
 		var c model.Customer
 		if err := rows.Scan(
 			&c.ID, &c.TenantID, &c.ExternalRef, &c.Name,
-			&c.BVNEncrypted, &c.BVNLast4, &c.NINEncrypted, &c.NINLast4, &c.KYCTier,
+			&c.BVNEncrypted, &c.BVNLast4, &c.NINEncrypted, &c.NINLast4, &c.NINDocumentEncrypted,  &c.KYCTier, &c.KYCStatus,
 			&c.Status, &c.CreatedAt, &c.UpdatedAt,
 		); err != nil {
 			return nil, err
@@ -113,11 +114,30 @@ func (r *CustomerRepo) UpdateName(ctx context.Context, tenantID, customerID uuid
 	return err
 }
 
-func (r *CustomerRepo) UpdateKYC(ctx context.Context, tenantID, customerID uuid.UUID, ninEncrypted, ninLast4 string, tier int) error {
+
+func (r *CustomerRepo) UpdateKYC(ctx context.Context, tenantID, customerID uuid.UUID, ninEncrypted, ninLast4, ninDocumentEncrypted string) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE customers
-		SET nin_encrypted = $1, nin_last4 = $2, kyc_tier = $3, updated_at = now()
+		SET nin_encrypted = $1, nin_last4 = $2, nin_document_encrypted = $3, kyc_status = 'pending_review', updated_at = now()
 		WHERE tenant_id = $4 AND id = $5
-	`, ninEncrypted, ninLast4, tier, tenantID, customerID)
+	`, ninEncrypted, ninLast4, ninDocumentEncrypted, tenantID, customerID)
+	return err
+}
+
+func (r *CustomerRepo) ApproveKYC(ctx context.Context, tenantID, customerID uuid.UUID) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE customers
+		SET kyc_tier = 2, kyc_status = 'approved', updated_at = now()
+		WHERE tenant_id = $1 AND id = $2
+	`, tenantID, customerID)
+	return err
+}
+
+func (r *CustomerRepo) RejectKYC(ctx context.Context, tenantID, customerID uuid.UUID) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE customers
+		SET kyc_status = 'rejected', updated_at = now()
+		WHERE tenant_id = $1 AND id = $2
+	`, tenantID, customerID)
 	return err
 }

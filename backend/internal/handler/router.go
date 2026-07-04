@@ -22,26 +22,26 @@ func NewRouter(
 	health http.HandlerFunc,
 ) http.Handler {
 	reconciliationSvc := service.NewReconciliationService(store, cfg.NombaWebhooksSigningSecret)
-	provisioningSvc   := service.NewProvisioningService(store, p, cfg.EncryptionKey)
-	lifecycleSvc      := service.NewLifecycleService(store, p)
-	statementSvc      := service.NewStatementService(store)
-	registrationSvc   := service.NewRegistrationService(store, mailer)
-	authSvc           := service.NewAuthService(store)
-	verificationSvc   := service.NewVerificationService(store)
+	provisioningSvc := service.NewProvisioningService(store, p, cfg.EncryptionKey)
+	lifecycleSvc := service.NewLifecycleService(store, p)
+	statementSvc := service.NewStatementService(store)
+	registrationSvc := service.NewRegistrationService(store, mailer)
+	authSvc := service.NewAuthService(store)
+	verificationSvc := service.NewVerificationService(store)
 
-	webhookH      := &WebhookHandler{reconciliation: reconciliationSvc, store: store}
-	accountH      := &AccountHandler{provisioning: provisioningSvc, lifecycle: lifecycleSvc, store: store}
-	customerH     := &CustomerHandler{store: store, encryptionKey: cfg.EncryptionKey}
-	statementH    := &StatementHandler{statement: statementSvc}
+	webhookH := &WebhookHandler{reconciliation: reconciliationSvc, store: store}
+	accountH := &AccountHandler{provisioning: provisioningSvc, lifecycle: lifecycleSvc, store: store}
+	customerH := &CustomerHandler{store: store, encryptionKey: cfg.EncryptionKey}
+	statementH := &StatementHandler{statement: statementSvc}
 	registrationH := &RegistrationHandler{registration: registrationSvc}
-	authH         := &AuthHandler{auth: authSvc, verification: verificationSvc, store: store, env: cfg.Env, encryptionKey: cfg.EncryptionKey}
+	authH := &AuthHandler{auth: authSvc, verification: verificationSvc, store: store, env: cfg.Env, encryptionKey: cfg.EncryptionKey}
 
-	registerRL     := middleware.NewRateLimiter(5)
-	loginRL        := middleware.NewRateLimiter(10)
+	registerRL := middleware.NewRateLimiter(5)
+	loginRL := middleware.NewRateLimiter(10)
 	accountWriteRL := middleware.NewRateLimiter(20)
-	accountReadRL  := middleware.NewRateLimiter(100)
-	statementRL    := middleware.NewRateLimiter(60)
-	customerRL     := middleware.NewRateLimiter(100)
+	accountReadRL := middleware.NewRateLimiter(100)
+	statementRL := middleware.NewRateLimiter(60)
+	customerRL := middleware.NewRateLimiter(100)
 
 	r := chi.NewRouter()
 	r.Use(chimiddleware.RealIP)
@@ -71,6 +71,8 @@ func NewRouter(
 		r.With(middleware.TenantAuth(store)).Post("/business-kyc", authH.SubmitBusinessKYC)
 		r.With(middleware.TenantAuth(store)).Post("/webhook-secret", authH.WebhookSecret)
 		r.With(middleware.TenantAuth(store)).Get("/misdirected", webhookH.ListMisdirected)
+		r.With(middleware.TenantAuth(store)).Post("/customers/{id}/kyc/approve", authH.ApproveCustomerKYC)
+		r.With(middleware.TenantAuth(store)).Post("/customers/{id}/kyc/reject", authH.RejectCustomerKYC)
 	})
 
 	r.Route("/v1", func(r chi.Router) {

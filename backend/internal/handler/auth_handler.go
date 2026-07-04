@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/go-chi/chi/v5"
 	"github.com/vector-10/kanall/internal/apierror"
 	"github.com/vector-10/kanall/internal/crypto"
 	"github.com/vector-10/kanall/internal/middleware"
@@ -238,6 +240,75 @@ func (h *AuthHandler) RotateKey(w http.ResponseWriter, r *http.Request) {
 
 	apierror.WriteJSON(w, http.StatusOK, map[string]string{"apiKey": rawKey})
 }
+
+
+func (h *AuthHandler) ApproveCustomerKYC(w http.ResponseWriter, r *http.Request) {
+	customerID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		apierror.Respond(w, apierror.BadRequest("invalid customer id"))
+		return
+	}
+
+	tenant := middleware.GetTenant(r.Context())
+
+	customer, err := h.store.Customers.GetByID(r.Context(), tenant.ID, customerID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			apierror.Respond(w, apierror.NotFound("customer not found"))
+			return
+		}
+		internalError(w, r, err)
+		return
+	}
+
+	if customer.KYCStatus != "pending_review" {
+		apierror.Respond(w, apierror.BadRequest("customer is not pending review"))
+		return
+	}
+
+	if err := h.store.Customers.ApproveKYC(r.Context(), tenant.ID, customerID); err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	customer.KYCTier = 2
+	customer.KYCStatus = "approved"
+	apierror.WriteJSON(w, http.StatusOK, customer)
+}
+
+func (h *AuthHandler) RejectCustomerKYC(w http.ResponseWriter, r *http.Request) {
+	customerID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		apierror.Respond(w, apierror.BadRequest("invalid customer id"))
+		return
+	}
+
+	tenant := middleware.GetTenant(r.Context())
+
+	customer, err := h.store.Customers.GetByID(r.Context(), tenant.ID, customerID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			apierror.Respond(w, apierror.NotFound("customer not found"))
+			return
+		}
+		internalError(w, r, err)
+		return
+	}
+
+	if customer.KYCStatus != "pending_review" {
+		apierror.Respond(w, apierror.BadRequest("customer is not pending review"))
+		return
+	}
+
+	if err := h.store.Customers.RejectKYC(r.Context(), tenant.ID, customerID); err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	customer.KYCStatus = "rejected"
+	apierror.WriteJSON(w, http.StatusOK, customer)
+}
+
 
 func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, rawToken string) {
 	http.SetCookie(w, &http.Cookie{
