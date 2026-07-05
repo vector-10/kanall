@@ -6,7 +6,7 @@ type Customer struct {
 	AccountRef     string
 	AccountName    string
 	BVN            string
-	ExpiryDate     *time.Time
+	ExpiryDate     *time.Time // formatted as "2006-01-02 15:04:05" for Nomba
 	ExpectedAmount *float64
 }
 
@@ -38,5 +38,7 @@ type Transaction struct {
 }
 
 type AccountUpdate struct {
-	AccountName string
+	AccountName    string
+	CallbackURL    *string
+	ExpectedAmount *string // naira decimal string e.g. "5000.00", nil = no change
 }

@@ -20,8 +20,10 @@ type VirtualAccount struct {
 	BankName          *string
 	Currency          string
 	Status            string
+	Type              string // "dedicated" | "onetime"
 	CallbackURL       *string
 	ExpectedAmount    *decimal.Decimal
+	ExpiresAt         *time.Time
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }

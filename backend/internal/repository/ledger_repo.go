@@ -118,6 +118,14 @@ func (r *LedgerRepo) MarkAsReversed(ctx context.Context, nombaTxnRef string) err
 	return err
 }
 
+func (r *LedgerRepo) FlagAsNeedsReview(ctx context.Context, nombaTxnRef string) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE ledger_entries SET status = 'needs_review'
+		WHERE nomba_txn_ref = $1 AND status = 'provisional'
+	`, nombaTxnRef)
+	return err
+}
+
 func (r *LedgerRepo) ListProvisional(ctx context.Context) ([]model.LedgerEntry, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, tenant_id, transaction_group_id, nomba_txn_ref, account_type, account_id,

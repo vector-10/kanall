@@ -217,7 +217,10 @@ func (n *NombaProvider) Provision(ctx context.Context, customer Customer) (Virtu
 		"bvn":         customer.BVN,
 	}
 	if customer.ExpectedAmount != nil {
-		reqBody["expectedAmount"] = int64(*customer.ExpectedAmount * 100)
+		reqBody["expectedAmount"] = fmt.Sprintf("%.2f", *customer.ExpectedAmount)
+	}
+	if customer.ExpiryDate != nil {
+		reqBody["expiryDate"] = customer.ExpiryDate.Format("2006-01-02 15:04:05")
 	}
 
 	resp, err := n.doRequest(ctx, http.MethodPost, "/v1/accounts/virtual/"+n.cfg.NombaSubAccountID, reqBody)
@@ -257,9 +260,17 @@ func (n *NombaProvider) Fetch(ctx context.Context, accountRef string) (VirtualAc
 }
 
 func (n *NombaProvider) Update(ctx context.Context, accountRef string, updates AccountUpdate) (VirtualAccount, error) {
-	resp, err := n.doRequest(ctx, http.MethodPut, "/v1/accounts/virtual/"+accountRef, map[string]string{
-		"accountName": updates.AccountName,
-	})
+	body := map[string]any{}
+	if updates.AccountName != "" {
+		body["accountName"] = updates.AccountName
+	}
+	if updates.CallbackURL != nil {
+		body["callbackUrl"] = *updates.CallbackURL
+	}
+	if updates.ExpectedAmount != nil {
+		body["expectedAmount"] = *updates.ExpectedAmount
+	}
+	resp, err := n.doRequest(ctx, http.MethodPut, "/v1/accounts/virtual/"+accountRef, body)
 	if err != nil {
 		return VirtualAccount{}, err
 	}
@@ -415,6 +426,37 @@ func (n *NombaProvider) Requery(ctx context.Context, merchantTxRef string) (Tran
 		return TransferResult{}, fmt.Errorf("nomba requery: empty status")
 	}
 	return TransferResult{ID: out.Data.ID, Status: out.Data.Status, MerchantTxRef: merchantTxRef}, nil
+}
+
+func (n *NombaProvider) FetchInboundTxn(ctx context.Context, txnRef string) (bool, error) {
+	path := fmt.Sprintf("/v1/transactions/accounts/%s/single?transactionRef=%s",
+		n.cfg.NombaSubAccountID, txnRef)
+	resp, err := n.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	rb, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode == http.StatusNotFound {
+		return false, nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("nomba inbound requery: status %d: %s", resp.StatusCode, rb)
+	}
+	var out struct {
+		Code string `json:"code"`
+		Data struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(rb, &out); err != nil {
+		return false, err
+	}
+	if out.Code != "00" || out.Data.ID == "" {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (n *NombaProvider) FetchTransactions(ctx context.Context, from, to time.Time) ([]Transaction, error) {

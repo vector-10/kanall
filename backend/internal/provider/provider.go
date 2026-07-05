@@ -11,6 +11,10 @@ type VirtualAccountProvider interface {
 	Update(ctx context.Context, accountRef string, updates AccountUpdate) (VirtualAccount, error)
 	Expire(ctx context.Context, accountRef string) error
 	FetchTransactions(ctx context.Context, from, to time.Time) ([]Transaction, error)
+	// FetchInboundTxn checks whether a specific inbound transaction exists on
+	// Nomba's side. Returns (true, nil) when confirmed, (false, nil) when not
+	// yet visible (retry-eligible), and (false, err) on a hard failure.
+	FetchInboundTxn(ctx context.Context, txnRef string) (bool, error)
 	ListBanks(ctx context.Context) ([]Bank, error)
 	LookupAccount(ctx context.Context, accountNumber, bankCode string) (BankAccount, error)
 	Transfer(ctx context.Context, input TransferInput) (TransferResult, error)

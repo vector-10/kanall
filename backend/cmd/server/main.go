@@ -62,6 +62,9 @@ func main() {
 
 	store := repository.NewStore(pool)
 
+	confirmationWorker := service.NewConfirmationWorker(store, p)
+	confirmationWorker.Start(ctx, 5)
+
 	convergenceSvc := service.NewConvergenceService(store, p, cfg.ConvergenceSweepInterval)
 	go convergenceSvc.Start(ctx)
 
@@ -82,7 +85,7 @@ func main() {
 		apierror.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}
 
-	router := handler.NewRouter(cfg, store, p, mailer, health)
+	router := handler.NewRouter(cfg, store, p, mailer, confirmationWorker, health)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

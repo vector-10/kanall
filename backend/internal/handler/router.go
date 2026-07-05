@@ -19,9 +19,10 @@ func NewRouter(
 	store *repository.Store,
 	p provider.VirtualAccountProvider,
 	mailer email.Sender,
+	confirmationWorker *service.ConfirmationWorker,
 	health http.HandlerFunc,
 ) http.Handler {
-	reconciliationSvc := service.NewReconciliationService(store, cfg.NombaWebhooksSigningSecret)
+	reconciliationSvc := service.NewReconciliationService(store, p, cfg.NombaWebhooksSigningSecret, confirmationWorker)
 	provisioningSvc := service.NewProvisioningService(store, p, cfg.EncryptionKey)
 	lifecycleSvc := service.NewLifecycleService(store, p)
 	statementSvc := service.NewStatementService(store)

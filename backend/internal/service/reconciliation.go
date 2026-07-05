@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"github.com/vector-10/kanall/internal/model"
+	"github.com/vector-10/kanall/internal/provider"
 	"github.com/vector-10/kanall/internal/repository"
 )
 
@@ -25,11 +26,13 @@ func permanent(err error) error       { return &permanentErr{err} }
 
 type ReconciliationService struct {
 	store         *repository.Store
+	provider      provider.VirtualAccountProvider
 	webhookSecret string
+	confirmWorker *ConfirmationWorker
 }
 
-func NewReconciliationService(store *repository.Store, webhookSecret string) *ReconciliationService {
-	return &ReconciliationService{store: store, webhookSecret: webhookSecret}
+func NewReconciliationService(store *repository.Store, prov provider.VirtualAccountProvider, webhookSecret string, confirmWorker *ConfirmationWorker) *ReconciliationService {
+	return &ReconciliationService{store: store, provider: prov, webhookSecret: webhookSecret, confirmWorker: confirmWorker}
 }
 
 type webhookPayload struct {
@@ -164,6 +167,9 @@ func (s *ReconciliationService) postEntries(ctx context.Context, payload webhook
 	if err != nil {
 		return misdirected(fmt.Errorf("account not found for ref %q: %w", accountRef, err))
 	}
+	if va.Status == "expired" {
+		return misdirected(fmt.Errorf("payment arrived for expired account %q", accountRef))
+	}
 
 	if va.ExpectedAmount != nil && !amountNGN.Equal(*va.ExpectedAmount) {
 		log.Printf("webhook: amount mismatch account=%s expected=%s got=%s",
@@ -215,6 +221,27 @@ func (s *ReconciliationService) postEntries(ctx context.Context, payload webhook
 	}
 	if !posted {
 		return nil
+	}
+
+	// For onetime VAs with a matching expectedAmount, expire immediately on first payment.
+	if va.Type == "onetime" && va.ExpectedAmount != nil && amountNGN.Equal(*va.ExpectedAmount) {
+		if err := s.provider.Expire(ctx, va.AccountRef); err != nil {
+			log.Printf("reconciliation: auto-expire failed for onetime VA %s: %v", va.AccountRef, err)
+		} else if err := s.store.Accounts.UpdateStatus(ctx, va.TenantID, va.AccountRef, "expired"); err != nil {
+			log.Printf("reconciliation: status update after auto-expire failed for %s: %v", va.AccountRef, err)
+		}
+	}
+
+	job := model.ConfirmationJob{
+		ID:                 uuid.New(),
+		TenantID:           va.TenantID,
+		NombaTxnRef:        txnID,
+		TransactionGroupID: groupID,
+	}
+	if err := s.store.ConfirmationJobs.Create(ctx, job); err != nil {
+		log.Printf("reconciliation: enqueue confirmation job failed for %s: %v", txnID, err)
+	} else {
+		s.confirmWorker.Enqueue(job)
 	}
 
 	if va.CallbackURL != nil {

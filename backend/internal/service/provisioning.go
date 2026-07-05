@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -33,16 +34,23 @@ type ProvisionInput struct {
 	BVN            string
 	CallbackURL    string
 	ExpectedAmount *decimal.Decimal
+	ExpiresAt      *time.Time
+	Mode           string // "dedicated" (default) | "onetime"
 }
 
 func (s *ProvisioningService) Provision(ctx context.Context, input ProvisionInput) (*model.VirtualAccount, error) {
-	customer, created, err := s.getOrCreateCustomer(ctx, input)
+	if input.Mode == "" {
+		input.Mode = "dedicated"
+	}
 
+	customer, created, err := s.getOrCreateCustomer(ctx, input)
 	if err != nil {
 		return nil, err
 	}
 
-	if !created {
+	// For dedicated VAs, return the existing VA if the customer already has one.
+	// For onetime VAs, always provision fresh regardless of existing accounts.
+	if input.Mode == "dedicated" && !created {
 		va, err := s.store.Accounts.GetByCustomerID(ctx, input.TenantID, customer.ID)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("account lookup failed: %w", err)
@@ -58,6 +66,7 @@ func (s *ProvisioningService) Provision(ctx context.Context, input ProvisionInpu
 		AccountRef:  accountRef,
 		AccountName: input.Name,
 		BVN:         input.BVN,
+		ExpiryDate:  input.ExpiresAt,
 	}
 	if input.ExpectedAmount != nil {
 		f, _ := input.ExpectedAmount.Float64()
@@ -80,7 +89,9 @@ func (s *ProvisioningService) Provision(ctx context.Context, input ProvisionInpu
 		BankName:          &pvd.BankName,
 		Currency:          pvd.Currency,
 		Status:            "active",
+		Type:              input.Mode,
 		ExpectedAmount:    input.ExpectedAmount,
+		ExpiresAt:         input.ExpiresAt,
 	}
 	if input.CallbackURL != "" {
 		va.CallbackURL = &input.CallbackURL

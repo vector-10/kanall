@@ -14,6 +14,7 @@ type Store struct {
 	WebhookDeliveries  *WebhookDeliveryRepo
 	EmailVerifications *EmailVerificationRepo
 	SettlementJobs     *SettlementJobRepo
+	ConfirmationJobs   *ConfirmationJobRepo
 }
 
 func NewStore(pool *pgxpool.Pool) *Store {
@@ -27,5 +28,6 @@ func NewStore(pool *pgxpool.Pool) *Store {
 		WebhookDeliveries:  &WebhookDeliveryRepo{pool: pool},
 		EmailVerifications: &EmailVerificationRepo{pool: pool},
 		SettlementJobs:     &SettlementJobRepo{pool: pool},
+		ConfirmationJobs:   &ConfirmationJobRepo{pool: pool},
 	}
 }

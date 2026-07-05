@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -28,6 +29,8 @@ type provisionRequest struct {
 	BVN            string           `json:"bvn"`
 	CallbackURL    string           `json:"callbackUrl"`
 	ExpectedAmount *decimal.Decimal `json:"expectedAmount"`
+	ExpiresAt      *time.Time       `json:"expiresAt"`
+	Mode           string           `json:"mode"` // "dedicated" (default) | "onetime"
 }
 
 type accountUpdateRequest struct {
@@ -59,6 +62,11 @@ func (h *AccountHandler) Provision(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Mode != "" && req.Mode != "dedicated" && req.Mode != "onetime" {
+		apierror.Respond(w, apierror.BadRequest("mode must be 'dedicated' or 'onetime'"))
+		return
+	}
+
 	va, err := h.provisioning.Provision(r.Context(), service.ProvisionInput{
 		TenantID:       tenant.ID,
 		ExternalRef:    req.ExternalRef,
@@ -66,6 +74,8 @@ func (h *AccountHandler) Provision(w http.ResponseWriter, r *http.Request) {
 		BVN:            req.BVN,
 		CallbackURL:    req.CallbackURL,
 		ExpectedAmount: req.ExpectedAmount,
+		ExpiresAt:      req.ExpiresAt,
+		Mode:           req.Mode,
 	})
 	if err != nil {
 		internalError(w, r, err)
@@ -152,14 +162,9 @@ func (h *AccountHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.store.Accounts.Update(r.Context(), tenant.ID, accountRef, req.CallbackURL, req.ExpectedAmount, req.Name); err != nil {
-		internalError(w, r, err)
-		return
-	}
-
-	va, err := h.store.Accounts.GetByAccountRef(r.Context(), tenant.ID, accountRef)
+	va, err := h.lifecycle.UpdateAccount(r.Context(), tenant.ID, accountRef, req.CallbackURL, req.ExpectedAmount, req.Name)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, service.ErrAccountNotFound) {
 			apierror.Respond(w, apierror.NotFound("account not found"))
 			return
 		}
