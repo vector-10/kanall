@@ -62,7 +62,6 @@ type webhookPayload struct {
 func (s *ReconciliationService) HandleWebhook(ctx context.Context, rawBody []byte, signature, timestamp string) error {
 	var payload webhookPayload
 	if err := json.Unmarshal(rawBody, &payload); err != nil {
-		log.Printf("webhook: JSON parse error: %v", err)
 		event := &model.WebhookEvent{
 			ID:             uuid.New(),
 			PayloadRaw:     rawBody,
@@ -77,8 +76,6 @@ func (s *ReconciliationService) HandleWebhook(ctx context.Context, rawBody []byt
 	}
 
 	sigValid := s.verifySignature(payload, signature, timestamp)
-	log.Printf("webhook: event=%s txnId=%s sigValid=%v",
-		payload.EventType, payload.Data.Transaction.TransactionID, sigValid)
 
 	event := &model.WebhookEvent{
 		ID:             uuid.New(),
@@ -134,17 +131,12 @@ func (s *ReconciliationService) HandleWebhook(ctx context.Context, rawBody []byt
 		}
 		_ = s.store.Webhooks.UpdateCategory(ctx, event.ID, category)
 		_ = s.store.Webhooks.UpdateStatus(ctx, event.ID, status, &errMsg)
-		log.Printf("webhook: %s event=%s txnId=%s err=%v",
-			status, payload.EventType, payload.Data.Transaction.TransactionID, err)
 		return err
 	}
 
 	cat := "payment"
 	_ = s.store.Webhooks.UpdateCategory(ctx, event.ID, cat)
 	_ = s.store.Webhooks.UpdateStatus(ctx, event.ID, "processed", nil)
-	log.Printf("webhook: processed event=%s txnId=%s accountRef=%s",
-		payload.EventType, payload.Data.Transaction.TransactionID,
-		payload.Data.Transaction.AliasAccountReference)
 	return nil
 }
 
@@ -152,7 +144,7 @@ type misdirectedErr struct{ cause error }
 
 func (e *misdirectedErr) Error() string { return e.cause.Error() }
 func (e *misdirectedErr) Unwrap() error { return e.cause }
-func misdirected(err error) error       { return &permanentErr{&misdirectedErr{err}} }
+func misdirected(err error) error       { return permanent(&misdirectedErr{err}) }
 func isMisdirected(err error) bool {
 	var m *misdirectedErr
 	return errors.As(err, &m)

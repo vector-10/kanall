@@ -91,7 +91,7 @@ func (s *ConvergenceService) postReversal(ctx context.Context, original model.Le
 		NombaTxnRef:        original.NombaTxnRef,
 		AccountType:        "virtual_account",
 		AccountID:          original.AccountID,
-		Direction:          "debit", // opposite of original credit
+		Direction:          "debit", 
 		Amount:             original.Amount,
 		Currency:           original.Currency,
 		Status:             "confirmed",
@@ -105,7 +105,7 @@ func (s *ConvergenceService) postReversal(ctx context.Context, original model.Le
 		NombaTxnRef:        original.NombaTxnRef,
 		AccountType:        "tenant_settlement",
 		AccountID:          original.TenantID,
-		Direction:          "credit", // opposite of original debit
+		Direction:          "credit", 
 		Amount:             original.Amount,
 		Currency:           original.Currency,
 		Status:             "confirmed",
