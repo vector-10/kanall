@@ -60,7 +60,13 @@ func (s *ProvisioningService) Provision(ctx context.Context, input ProvisionInpu
 		}
 	}
 
-	accountRef := uuid.New().String()
+	// Use externalRef as the Nomba accountRef for dedicated VAs so tenants can
+	// look up accounts by their own reference on both Nomba and Kanall.
+	// For onetime VAs, append a short suffix so one customer can have multiple.
+	accountRef := input.ExternalRef
+	if input.Mode == "onetime" {
+		accountRef = input.ExternalRef + "-" + uuid.New().String()[:8]
+	}
 
 	pvdInput := provider.Customer{
 		AccountRef:  accountRef,

@@ -51,14 +51,6 @@ func (s *SettlementService) Settle(
 		return SettleResult{}, fmt.Errorf("account not found: %w", err)
 	}
 
-	balance, err := s.store.Ledger.GetBalance(ctx, tenantID, va.ID)
-	if err != nil {
-		return SettleResult{}, fmt.Errorf("balance check failed: %w", err)
-	}
-	if balance.LessThan(amount) {
-		return SettleResult{}, ErrInsufficientFunds
-	}
-
 	looked, err := s.provider.LookupAccount(ctx, accountNumber, bankCode)
 	if err != nil {
 		return SettleResult{}, fmt.Errorf("recipient lookup failed: %w", err)
@@ -110,6 +102,9 @@ func (s *SettlementService) Settle(
 	}
 
 	if err := s.store.Ledger.PostSettlementIntent(ctx, debit, credit, job); err != nil {
+		if errors.Is(err, repository.ErrInsufficientFunds) {
+			return SettleResult{}, ErrInsufficientFunds
+		}
 		return SettleResult{}, fmt.Errorf("settlement intent failed: %w", err)
 	}
 

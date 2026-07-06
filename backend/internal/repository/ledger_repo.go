@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -9,6 +10,8 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/vector-10/kanall/internal/model"
 )
+
+var ErrInsufficientFunds = errors.New("insufficient funds")
 
 type LedgerRepo struct {
 	pool *pgxpool.Pool
@@ -72,6 +75,23 @@ func (r *LedgerRepo) PostSettlementIntent(ctx context.Context, debit, credit mod
 		return err
 	}
 	defer tx.Rollback(ctx)
+
+	// Lock the VA row so concurrent settle calls on the same account serialize.
+	// Then the balance check is safe — no other settlement can post a debit until we commit.
+	if _, err := tx.Exec(ctx, `SELECT id FROM virtual_accounts WHERE id = $1 FOR UPDATE`, debit.AccountID); err != nil {
+		return err
+	}
+	var balance decimal.Decimal
+	if err := tx.QueryRow(ctx, `
+		SELECT COALESCE(SUM(CASE WHEN direction = 'credit' THEN amount ELSE -amount END), 0::numeric)
+		FROM ledger_entries
+		WHERE tenant_id = $1 AND account_id = $2 AND status != 'reversed'
+	`, debit.TenantID, debit.AccountID).Scan(&balance); err != nil {
+		return err
+	}
+	if balance.LessThan(debit.Amount) {
+		return ErrInsufficientFunds
+	}
 
 	const insertEntry = `
 		INSERT INTO ledger_entries

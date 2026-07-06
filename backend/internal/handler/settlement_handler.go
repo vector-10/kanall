@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -22,6 +23,15 @@ func (h *SettlementHandler) ListBanks(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		internalError(w, r, err)
 		return
+	}
+	if q := strings.ToLower(r.URL.Query().Get("search")); q != "" {
+		filtered := banks[:0]
+		for _, b := range banks {
+			if strings.Contains(strings.ToLower(b.Name), q) {
+				filtered = append(filtered, b)
+			}
+		}
+		banks = filtered
 	}
 	apierror.WriteJSON(w, http.StatusOK, map[string]any{"banks": banks})
 }

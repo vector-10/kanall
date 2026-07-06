@@ -307,18 +307,16 @@ func (n *NombaProvider) ListBanks(ctx context.Context) ([]Bank, error) {
 		return nil, fmt.Errorf("nomba list banks failed: status %d: %s", resp.StatusCode, rb)
 	}
 	var out struct {
-		Data struct {
-			Results []struct {
-				Code string `json:"code"`
-				Name string `json:"name"`
-			} `json:"results"`
+		Data []struct {
+			Code string `json:"code"`
+			Name string `json:"name"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return nil, err
 	}
-	banks := make([]Bank, len(out.Data.Results))
-	for i, b := range out.Data.Results {
+	banks := make([]Bank, len(out.Data))
+	for i, b := range out.Data {
 		banks[i] = Bank{Code: b.Code, Name: b.Name}
 	}
 	return banks, nil
