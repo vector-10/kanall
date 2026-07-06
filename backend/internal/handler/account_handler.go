@@ -13,6 +13,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/vector-10/kanall/internal/apierror"
 	"github.com/vector-10/kanall/internal/middleware"
+	"github.com/vector-10/kanall/internal/model"
 	"github.com/vector-10/kanall/internal/repository"
 	"github.com/vector-10/kanall/internal/service"
 )
@@ -47,6 +48,21 @@ type listPagination struct {
 	Limit      int        `json:"limit"`
 	NextCursor *uuid.UUID `json:"nextCursor,omitempty"`
 	HasMore    bool       `json:"hasMore"`
+}
+
+// fetchVA looks up a virtual account by accountRef for the given tenant.
+// It writes the appropriate error response and returns false if not found.
+func (h *AccountHandler) fetchVA(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID, accountRef string) (*model.VirtualAccount, bool) {
+	va, err := h.store.Accounts.GetByAccountRef(r.Context(), tenantID, accountRef)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			apierror.Respond(w, apierror.NotFound("account not found"))
+			return nil, false
+		}
+		internalError(w, r, err)
+		return nil, false
+	}
+	return va, true
 }
 
 func (h *AccountHandler) Provision(w http.ResponseWriter, r *http.Request) {
@@ -87,18 +103,10 @@ func (h *AccountHandler) Provision(w http.ResponseWriter, r *http.Request) {
 
 func (h *AccountHandler) Get(w http.ResponseWriter, r *http.Request) {
 	tenant := middleware.GetTenant(r.Context())
-	accountRef := chi.URLParam(r, "accountRef")
-
-	va, err := h.store.Accounts.GetByAccountRef(r.Context(), tenant.ID, accountRef)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			apierror.Respond(w, apierror.NotFound("account not found"))
-			return
-		}
-		internalError(w, r, err)
+	va, ok := h.fetchVA(w, r, tenant.ID, chi.URLParam(r, "accountRef"))
+	if !ok {
 		return
 	}
-
 	apierror.WriteJSON(w, http.StatusOK, va)
 }
 
@@ -181,15 +189,8 @@ func (h *AccountHandler) Expire(w http.ResponseWriter, r *http.Request) {
 
 func (h *AccountHandler) Balance(w http.ResponseWriter, r *http.Request) {
 	tenant := middleware.GetTenant(r.Context())
-	accountRef := chi.URLParam(r, "accountRef")
-
-	va, err := h.store.Accounts.GetByAccountRef(r.Context(), tenant.ID, accountRef)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			apierror.Respond(w, apierror.NotFound("account not found"))
-			return
-		}
-		internalError(w, r, err)
+	va, ok := h.fetchVA(w, r, tenant.ID, chi.URLParam(r, "accountRef"))
+	if !ok {
 		return
 	}
 
@@ -200,7 +201,7 @@ func (h *AccountHandler) Balance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apierror.WriteJSON(w, http.StatusOK, map[string]any{
-		"accountRef": accountRef,
+		"accountRef": va.AccountRef,
 		"balance":    balance.StringFixed(2),
 		"currency":   "NGN",
 	})
@@ -223,15 +224,8 @@ func (h *AccountHandler) TenantBalance(w http.ResponseWriter, r *http.Request) {
 
 func (h *AccountHandler) History(w http.ResponseWriter, r *http.Request) {
 	tenant := middleware.GetTenant(r.Context())
-	accountRef := chi.URLParam(r, "accountRef")
-
-	va, err := h.store.Accounts.GetByAccountRef(r.Context(), tenant.ID, accountRef)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			apierror.Respond(w, apierror.NotFound("account not found"))
-			return
-		}
-		internalError(w, r, err)
+	va, ok := h.fetchVA(w, r, tenant.ID, chi.URLParam(r, "accountRef"))
+	if !ok {
 		return
 	}
 

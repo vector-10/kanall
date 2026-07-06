@@ -29,6 +29,18 @@ func NewNombaProvider(cfg *config.Config) *NombaProvider {
 	}
 }
 
+// Nomba API path constants. All paths relative to NombaBaseURL.
+const (
+	nombaPathAuthIssue   = "/v1/auth/token/issue"
+	nombaPathAuthRefresh = "/v1/auth/token/refresh"
+	nombaPathVirtual     = "/v1/accounts/virtual/"
+	nombaPathBanks       = "/v1/transfers/banks"
+	nombaPathBankLookup  = "/v1/transfers/bank/lookup"
+	nombaPathTransfer    = "/v2/transfers/bank/"
+	nombaPathTxnSingle   = "/v1/transactions/accounts/%s/single"
+	nombaPathTxnList     = "/v1/transactions/accounts/%s"
+)
+
 type nombaAuthResponse struct {
 	Data struct {
 		AccessToken  string `json:"access_token"`
@@ -61,7 +73,7 @@ func (n *NombaProvider) doIssue(ctx context.Context) (string, error) {
 		"client_secret": n.cfg.NombaClientSecret,
 	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		n.cfg.NombaBaseURL+"/v1/auth/token/issue",
+		n.cfg.NombaBaseURL+nombaPathAuthIssue,
 		bytes.NewReader(body),
 	)
 	if err != nil {
@@ -96,7 +108,7 @@ func (n *NombaProvider) doRefresh(ctx context.Context) (string, error) {
 		"refresh_token": n.refreshToken,
 	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		n.cfg.NombaBaseURL+"/v1/auth/token/refresh",
+		n.cfg.NombaBaseURL+nombaPathAuthRefresh,
 		bytes.NewReader(body),
 	)
 	if err != nil {
@@ -223,7 +235,7 @@ func (n *NombaProvider) Provision(ctx context.Context, customer Customer) (Virtu
 		reqBody["expiryDate"] = customer.ExpiryDate.Format("2006-01-02 15:04:05")
 	}
 
-	resp, err := n.doRequest(ctx, http.MethodPost, "/v1/accounts/virtual/"+n.cfg.NombaSubAccountID, reqBody)
+	resp, err := n.doRequest(ctx, http.MethodPost, nombaPathVirtual+n.cfg.NombaSubAccountID, reqBody)
 	if err != nil {
 		return VirtualAccount{}, err
 	}
@@ -242,7 +254,7 @@ func (n *NombaProvider) Provision(ctx context.Context, customer Customer) (Virtu
 }
 
 func (n *NombaProvider) Fetch(ctx context.Context, accountRef string) (VirtualAccount, error) {
-	resp, err := n.doRequest(ctx, http.MethodGet, "/v1/accounts/virtual/"+accountRef, nil)
+	resp, err := n.doRequest(ctx, http.MethodGet, nombaPathVirtual+accountRef, nil)
 	if err != nil {
 		return VirtualAccount{}, err
 	}
@@ -270,7 +282,7 @@ func (n *NombaProvider) Update(ctx context.Context, accountRef string, updates A
 	if updates.ExpectedAmount != nil {
 		body["expectedAmount"] = *updates.ExpectedAmount
 	}
-	resp, err := n.doRequest(ctx, http.MethodPut, "/v1/accounts/virtual/"+accountRef, body)
+	resp, err := n.doRequest(ctx, http.MethodPut, nombaPathVirtual+accountRef, body)
 	if err != nil {
 		return VirtualAccount{}, err
 	}
@@ -284,7 +296,7 @@ func (n *NombaProvider) Update(ctx context.Context, accountRef string, updates A
 }
 
 func (n *NombaProvider) Expire(ctx context.Context, accountRef string) error {
-	resp, err := n.doRequest(ctx, http.MethodDelete, "/v1/accounts/virtual/"+accountRef, nil)
+	resp, err := n.doRequest(ctx, http.MethodDelete, nombaPathVirtual+accountRef, nil)
 	if err != nil {
 		return err
 	}
@@ -297,7 +309,7 @@ func (n *NombaProvider) Expire(ctx context.Context, accountRef string) error {
 }
 
 func (n *NombaProvider) ListBanks(ctx context.Context) ([]Bank, error) {
-	resp, err := n.doRequest(ctx, http.MethodGet, "/v1/transfers/banks", nil)
+	resp, err := n.doRequest(ctx, http.MethodGet, nombaPathBanks, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +335,7 @@ func (n *NombaProvider) ListBanks(ctx context.Context) ([]Bank, error) {
 }
 
 func (n *NombaProvider) LookupAccount(ctx context.Context, accountNumber, bankCode string) (BankAccount, error) {
-	resp, err := n.doRequest(ctx, http.MethodPost, "/v1/transfers/bank/lookup", map[string]string{
+	resp, err := n.doRequest(ctx, http.MethodPost, nombaPathBankLookup, map[string]string{
 		"accountNumber": accountNumber,
 		"bankCode":      bankCode,
 	})
@@ -369,7 +381,7 @@ func (n *NombaProvider) Transfer(ctx context.Context, input TransferInput) (Tran
 		body["narration"] = input.Narration
 	}
 
-	path := "/v2/transfers/bank/" + n.cfg.NombaSubAccountID
+	path := nombaPathTransfer + n.cfg.NombaSubAccountID
 	resp, err := n.doRequest(ctx, http.MethodPost, path, body)
 	if err != nil {
 		return TransferResult{}, err
@@ -396,7 +408,7 @@ func (n *NombaProvider) Transfer(ctx context.Context, input TransferInput) (Tran
 }
 
 func (n *NombaProvider) Requery(ctx context.Context, merchantTxRef string) (TransferResult, error) {
-	path := fmt.Sprintf("/v1/transactions/accounts/%s/single?transactionRef=%s",
+	path := fmt.Sprintf(nombaPathTxnSingle+"?transactionRef=%s",
 		n.cfg.NombaSubAccountID, merchantTxRef)
 	resp, err := n.doRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -427,7 +439,7 @@ func (n *NombaProvider) Requery(ctx context.Context, merchantTxRef string) (Tran
 }
 
 func (n *NombaProvider) FetchInboundTxn(ctx context.Context, txnRef string) (bool, error) {
-	path := fmt.Sprintf("/v1/transactions/accounts/%s/single?transactionRef=%s",
+	path := fmt.Sprintf(nombaPathTxnSingle+"?transactionRef=%s",
 		n.cfg.NombaSubAccountID, txnRef)
 	resp, err := n.doRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -464,7 +476,7 @@ func (n *NombaProvider) FetchTransactions(ctx context.Context, from, to time.Tim
 
 	for {
 		path := fmt.Sprintf(
-			"/v1/transactions/accounts/%s?limit=100&dateFrom=%s&dateTo=%s",
+			nombaPathTxnList+"?limit=100&dateFrom=%s&dateTo=%s",
 			n.cfg.NombaSubAccountID,
 			from.Format(layout),
 			to.Format(layout),
