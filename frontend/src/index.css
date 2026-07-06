@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Bungee Inline';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/BungeeInline-Regular.woff2') format('woff2');
+}
+
 :root {
   --bg:             #F7F8FA;
   --surface:        #FFFFFF;
@@ -9,7 +17,7 @@
   --text:           #111827;
   --text-muted:     #1F2937;
   --text-faint:     #4B5563;
-  --accent:         #FFCD32;
+  --accent:         #E6B800;
   --accent-fg:      #0D0D0D;
   --red:            #DC2626;
   --red-bg:         rgba(220,38,38,0.06);

@@ -85,6 +85,25 @@ export default function Layout({ children, onLogout }: Props) {
           ))}
         </nav>
 
+        {/* Docs link */}
+        <div style={{ padding: '8px 0', borderTop: '1px solid var(--border)' }}>
+          <a
+            href="https://kanall-docs.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none', display: 'block' }}
+          >
+            <div style={{ padding: '9px 20px', cursor: 'pointer' }}
+              onMouseEnter={e => { (e.currentTarget.querySelector('span') as HTMLElement).style.color = 'var(--accent)' }}
+              onMouseLeave={e => { (e.currentTarget.querySelector('span') as HTMLElement).style.color = 'var(--text-faint)' }}
+            >
+              <span style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-faint)' }}>
+                DOCS ↗
+              </span>
+            </div>
+          </a>
+        </div>
+
         {/* Footer */}
         <div style={{ padding: '14px 20px 20px', borderTop: '1px solid var(--border)' }}>
 

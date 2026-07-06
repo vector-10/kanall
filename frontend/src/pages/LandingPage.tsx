@@ -84,6 +84,20 @@ export default function LandingPage({ isAuthed }: Props) {
 
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <ThemeToggle />
+          <a
+            href="https://kanall-docs.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              letterSpacing: "0.12em",
+              color: "var(--text-muted)",
+              textDecoration: "none",
+            }}
+          >
+            DOCS
+          </a>
           <Link
             to={navTo}
             style={{
