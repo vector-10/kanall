@@ -30,7 +30,7 @@ const maxDeliveryAttempts = 5
 type OutboxWorker struct {
 	store         *repository.Store
 	httpClient    *http.Client
-	sem           chan struct{}
+	work          chan model.TenantWebhookDelivery
 	encryptionKey string
 }
 
@@ -38,13 +38,16 @@ func NewOutboxWorker(store *repository.Store, httpTimeout time.Duration, encrypt
 	return &OutboxWorker{
 		store:         store,
 		httpClient:    &http.Client{Timeout: httpTimeout},
-		sem:           make(chan struct{}, 10),
+		work:          make(chan model.TenantWebhookDelivery, 500),
 		encryptionKey: encryptionKey,
 	}
 }
 
 func (w *OutboxWorker) Start(ctx context.Context) {
 	log.Println("outbox: worker started")
+	for i := 0; i < 10; i++ {
+		go w.runWorker(ctx)
+	}
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 	for {
@@ -58,26 +61,33 @@ func (w *OutboxWorker) Start(ctx context.Context) {
 	}
 }
 
+func (w *OutboxWorker) runWorker(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case d := <-w.work:
+			w.deliver(ctx, d)
+		}
+	}
+}
+
 func (w *OutboxWorker) sweep(ctx context.Context) {
-	deliveries, err := w.store.WebhookDeliveries.ListRetryable(ctx)
+	deliveries, err := w.store.WebhookDeliveries.ClaimBatch(ctx, 100)
 	if err != nil {
-		log.Printf("outbox: list failed: %v", err)
+		log.Printf("outbox: claim failed: %v", err)
 		return
 	}
 	for _, d := range deliveries {
-		d := d
-		go w.deliver(ctx, d)
+		select {
+		case w.work <- d:
+		default:
+			// channel full — delivery stays in DB and is picked up next sweep
+		}
 	}
 }
 
 func (w *OutboxWorker) deliver(ctx context.Context, d model.TenantWebhookDelivery) {
-	select {
-	case w.sem <- struct{}{}:
-		defer func() { <-w.sem }()
-	case <-ctx.Done():
-		return
-	}
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, d.CallbackURL, bytes.NewReader(d.Payload))
 	if err != nil {
 		w.fail(ctx, d, fmt.Sprintf("build request: %v", err))
@@ -85,7 +95,6 @@ func (w *OutboxWorker) deliver(ctx context.Context, d model.TenantWebhookDeliver
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	// Sign the delivery if this tenant has a webhook secret configured.
 	if sig, ok := w.buildSignature(ctx, d); ok {
 		req.Header.Set("X-Kanall-Signature", sig)
 	}
@@ -106,7 +115,6 @@ func (w *OutboxWorker) deliver(ctx context.Context, d model.TenantWebhookDeliver
 
 	w.fail(ctx, d, fmt.Sprintf("non-2xx: %d", resp.StatusCode))
 }
-
 
 func (w *OutboxWorker) buildSignature(ctx context.Context, d model.TenantWebhookDelivery) (string, bool) {
 	if w.encryptionKey == "" {

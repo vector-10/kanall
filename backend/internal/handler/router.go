@@ -38,6 +38,7 @@ func NewRouter(
 	registrationH := &RegistrationHandler{registration: registrationSvc}
 	authH := &AuthHandler{auth: authSvc, verification: verificationSvc, store: store, env: cfg.Env, encryptionKey: cfg.EncryptionKey}
 	settlementH := &SettlementHandler{settlement: settlementSvc}
+	feeH := &FeeHandler{}
 
 	registerRL := middleware.NewRateLimiter(5)
 	loginRL := middleware.NewRateLimiter(10)
@@ -96,6 +97,8 @@ func NewRouter(
 		r.With(accountWriteRL.ByAPIKey).Post("/customers/{id}/kyc", customerH.UpgradeKYC)
 
 		r.With(accountReadRL.ByAPIKey).Get("/webhooks/dead-letters", webhookH.ListDeadLetters)
+
+		r.With(accountReadRL.ByAPIKey).Get("/fees/calculate", feeH.Calculate)
 
 		r.With(accountReadRL.ByAPIKey).Get("/transfers/banks", settlementH.ListBanks)
 		r.With(accountWriteRL.ByAPIKey).Post("/transfers/lookup", settlementH.LookupAccount)

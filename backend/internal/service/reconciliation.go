@@ -156,6 +156,7 @@ func isMisdirected(err error) bool {
 func (s *ReconciliationService) postEntries(ctx context.Context, payload webhookPayload) error {
 	amountNGN, _ := decimal.NewFromString(payload.Data.Transaction.TransactionAmount.String())
 	feeNGN, _ := decimal.NewFromString(payload.Data.Transaction.Fee.String())
+	netAmountNGN := amountNGN.Sub(feeNGN)
 
 	currency := payload.Data.Transaction.Currency
 	if currency == "" {
@@ -188,7 +189,7 @@ func (s *ReconciliationService) postEntries(ctx context.Context, payload webhook
 		AccountType:        "virtual_account",
 		AccountID:          va.ID,
 		Direction:          "credit",
-		Amount:             amountNGN,
+		Amount:             netAmountNGN,
 		Fee:                feeNGN,
 		Currency:           currency,
 		Status:             "provisional",
@@ -203,7 +204,7 @@ func (s *ReconciliationService) postEntries(ctx context.Context, payload webhook
 		AccountType:        "tenant_settlement",
 		AccountID:          va.TenantID,
 		Direction:          "debit",
-		Amount:             amountNGN,
+		Amount:             netAmountNGN,
 		Fee:                feeNGN,
 		Currency:           currency,
 		Status:             "provisional",
@@ -249,7 +250,9 @@ func (s *ReconciliationService) postEntries(ctx context.Context, payload webhook
 			"eventType":          "payment.received",
 			"transactionGroupId": groupID.String(),
 			"accountRef":         accountRef,
-			"amount":             amountNGN,
+			"amount":             netAmountNGN.StringFixed(2),
+			"gross_amount":       amountNGN.StringFixed(2),
+			"nomba_fee":          feeNGN.StringFixed(2),
 			"currency":           currency,
 			"senderName":         payload.Data.Customer.SenderName,
 			"narration":          payload.Data.Transaction.Narration,

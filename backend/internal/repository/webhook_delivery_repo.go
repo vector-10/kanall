@@ -23,22 +23,52 @@ func (r *WebhookDeliveryRepo) Create(ctx context.Context, d *model.TenantWebhook
 	return err
 }
 
-// ListRetryable returns pending deliveries and failed ones past their next_retry_at.
-func (r *WebhookDeliveryRepo) ListRetryable(ctx context.Context) ([]model.TenantWebhookDelivery, error) {
-	rows, err := r.pool.Query(ctx, `
-		SELECT id, tenant_id, transaction_group_id, payload, callback_url, status,
-		       attempt_count, last_error, next_retry_at, created_at, delivered_at
-		FROM tenant_webhook_deliveries
-		WHERE status = 'pending'
-		   OR (status = 'failed' AND next_retry_at <= now())
-		ORDER BY next_retry_at ASC NULLS FIRST
-		LIMIT 100
-	`)
+// ClaimBatch selects up to limit eligible deliveries and leases them for 30 seconds
+// by advancing next_retry_at, preventing duplicate delivery across sweep ticks.
+func (r *WebhookDeliveryRepo) ClaimBatch(ctx context.Context, limit int) ([]model.TenantWebhookDelivery, error) {
+	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	return scanDeliveries(rows)
+	defer tx.Rollback(ctx)
+
+	rows, err := tx.Query(ctx, `
+		SELECT id, tenant_id, transaction_group_id, payload, callback_url, status,
+		       attempt_count, last_error, next_retry_at, created_at, delivered_at
+		FROM tenant_webhook_deliveries
+		WHERE (status = 'pending' AND (next_retry_at IS NULL OR next_retry_at <= now()))
+		   OR (status = 'failed'  AND next_retry_at <= now())
+		ORDER BY next_retry_at ASC NULLS FIRST
+		LIMIT $1
+		FOR UPDATE SKIP LOCKED
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	deliveries, err := scanDeliveries(rows)
+	rows.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(deliveries) == 0 {
+		return nil, tx.Commit(ctx)
+	}
+
+	ids := make([]uuid.UUID, len(deliveries))
+	for i, d := range deliveries {
+		ids[i] = d.ID
+	}
+	if _, err := tx.Exec(ctx, `
+		UPDATE tenant_webhook_deliveries
+		SET next_retry_at = now() + interval '30 seconds'
+		WHERE id = ANY($1)
+	`, ids); err != nil {
+		return nil, err
+	}
+
+	return deliveries, tx.Commit(ctx)
 }
 
 // UpdateAfterAttempt updates status and retry metadata after each delivery attempt.
