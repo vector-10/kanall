@@ -190,3 +190,14 @@ func (r *AccountRepo) ListByTenant(ctx context.Context, tenantID uuid.UUID, limi
 	}
 	return accounts, rows.Err()
 }
+
+func (r *AccountRepo) ExpireOnetimeVAs(ctx context.Context) (int64, error) {
+	tag, err := r.pool.Exec(ctx, `
+		UPDATE virtual_accounts
+		SET status = 'expired'
+		WHERE type = 'onetime'
+		  AND expires_at <= now()
+		  AND status = 'active'
+	`)
+	return tag.RowsAffected(), err
+}

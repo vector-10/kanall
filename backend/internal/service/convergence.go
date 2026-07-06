@@ -48,6 +48,12 @@ func (s *ConvergenceService) Start(ctx context.Context) {
 }
 
 func (s *ConvergenceService) sweep(ctx context.Context) error {
+	if n, err := s.store.Accounts.ExpireOnetimeVAs(ctx); err != nil {
+		log.Printf("convergence: onetime VA expiry sweep failed: %v", err)
+	} else if n > 0 {
+		log.Printf("convergence: expired %d onetime VA(s) past deadline", n)
+	}
+
 	entries, err := s.store.Ledger.ListProvisional(ctx)
 	if err != nil {
 		return err
