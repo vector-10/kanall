@@ -63,6 +63,11 @@ func (w *SettlementWorker) sweep(ctx context.Context) {
 }
 
 func (w *SettlementWorker) process(ctx context.Context, job model.SettlementJob) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			log.Printf("settlement worker: panic recovered for job %s: %v", job.ID, rec)
+		}
+	}()
 	select {
 	case w.sem <- struct{}{}:
 		defer func() { <-w.sem }()

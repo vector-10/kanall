@@ -49,6 +49,7 @@ func NewRouter(
 
 	r := chi.NewRouter()
 	r.Use(chimiddleware.RealIP)
+	r.Use(chimiddleware.Recoverer)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.CORSWithOrigin(cfg.FrontendOrigin))

@@ -62,6 +62,11 @@ func (w *OutboxWorker) Start(ctx context.Context) {
 }
 
 func (w *OutboxWorker) runWorker(ctx context.Context) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			log.Printf("outbox: worker panic recovered: %v", rec)
+		}
+	}()
 	for {
 		select {
 		case <-ctx.Done():

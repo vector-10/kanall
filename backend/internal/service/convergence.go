@@ -36,6 +36,11 @@ func (s *ConvergenceService) Start(ctx context.Context) {
 			}
 			go func() {
 				defer s.mu.Unlock()
+				defer func() {
+					if rec := recover(); rec != nil {
+						log.Printf("convergence: panic recovered: %v", rec)
+					}
+				}()
 				if err := s.sweep(ctx); err != nil {
 					log.Printf("convergence: sweep error: %v", err)
 				}
