@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api'
 import type { AccountsResponse } from '../api'
 import StatusBadge from '../components/StatusBadge'
@@ -33,6 +33,13 @@ export default function AccountsPage() {
   const navigate = useNavigate()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
+  const [balanceVisible, setBalanceVisible] = useState(false)
+
+  const { data: balanceData } = useQuery({
+    queryKey: ['tenant-balance'],
+    queryFn: api.accounts.totalBalance,
+    staleTime: 3 * 60_000,
+  })
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } =
     useInfiniteQuery({
@@ -90,6 +97,53 @@ export default function AccountsPage() {
           }}
         >
           {showForm ? 'CANCEL' : '+ NEW ACCOUNT'}
+        </button>
+      </div>
+
+      {/* Balance card */}
+      <div style={{
+        maxWidth: 420,
+        border: '1px solid var(--border)',
+        borderLeft: '3px solid var(--accent)',
+        background: 'var(--surface)',
+        padding: '16px 20px',
+        marginBottom: 20,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <div>
+          <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 6 }}>
+            TOTAL BALANCE
+          </div>
+          <div style={{ ...MONO, fontSize: 22, color: 'var(--text)', letterSpacing: '0.04em', fontVariantNumeric: 'tabular-nums' }}>
+            {balanceVisible
+              ? `₦${parseFloat(balanceData?.balance ?? '0').toLocaleString('en-NG', { minimumFractionDigits: 2 })}`
+              : '₦ ••••••••'}
+          </div>
+          <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', color: 'var(--text-faint)', marginTop: 5 }}>
+            NGN · CALCULATED FROM LEDGER
+          </div>
+        </div>
+        <button
+          onClick={() => setBalanceVisible(v => !v)}
+          title={balanceVisible ? 'Hide balance' : 'Show balance'}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, color: 'var(--text-faint)', display: 'flex', alignItems: 'center' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-faint)' }}
+        >
+          {balanceVisible ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          )}
         </button>
       </div>
 

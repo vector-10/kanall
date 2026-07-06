@@ -213,6 +213,9 @@ export const api = {
     balance: (ref: string) =>
       request<{ accountRef: string; balance: string; currency: string }>('GET', `/v1/accounts/${ref}/balance`),
 
+    totalBalance: () =>
+      request<{ balance: string; currency: string }>('GET', '/v1/balance'),
+
     history: (ref: string) =>
       request<{ history: AccountStateLog[] | null }>('GET', `/v1/accounts/${ref}/history`),
   },

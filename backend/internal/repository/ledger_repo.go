@@ -31,6 +31,21 @@ func (r *LedgerRepo) GetBalance(ctx context.Context, tenantID, accountID uuid.UU
 	return balance, err
 }
 
+func (r *LedgerRepo) GetTenantBalance(ctx context.Context, tenantID uuid.UUID) (decimal.Decimal, error) {
+	var balance decimal.Decimal
+	err := r.pool.QueryRow(ctx, `
+		SELECT COALESCE(
+			SUM(CASE WHEN direction = 'credit' THEN amount ELSE -amount END),
+			0::numeric
+		)
+		FROM ledger_entries
+		WHERE tenant_id = $1
+		  AND account_type = 'virtual_account'
+		  AND status IN ('confirmed', 'provisional')
+	`, tenantID).Scan(&balance)
+	return balance, err
+}
+
 func (r *LedgerRepo) PostDoubleEntry(ctx context.Context, credit, debit model.LedgerEntry, pe model.ProcessedEvent) (posted bool, err error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {

@@ -82,6 +82,8 @@ func NewRouter(
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(middleware.TenantAuth(store))
 
+		r.With(accountReadRL.ByAPIKey).Get("/balance", accountH.TenantBalance)
+
 		r.With(accountWriteRL.ByAPIKey).Post("/accounts", accountH.Provision)
 		r.With(accountReadRL.ByAPIKey).Get("/accounts", accountH.List)
 		r.With(accountReadRL.ByAPIKey).Get("/accounts/{accountRef}", accountH.Get)

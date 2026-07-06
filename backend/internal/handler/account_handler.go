@@ -206,6 +206,21 @@ func (h *AccountHandler) Balance(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *AccountHandler) TenantBalance(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenant(r.Context())
+
+	balance, err := h.store.Ledger.GetTenantBalance(r.Context(), tenant.ID)
+	if err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	apierror.WriteJSON(w, http.StatusOK, map[string]any{
+		"balance":  balance.StringFixed(2),
+		"currency": "NGN",
+	})
+}
+
 func (h *AccountHandler) History(w http.ResponseWriter, r *http.Request) {
 	tenant := middleware.GetTenant(r.Context())
 	accountRef := chi.URLParam(r, "accountRef")
