@@ -146,6 +146,23 @@ func (r *LedgerRepo) FlagAsNeedsReview(ctx context.Context, nombaTxnRef string) 
 	return err
 }
 
+func (r *LedgerRepo) ListNeedsReview(ctx context.Context, tenantID uuid.UUID) ([]model.LedgerEntry, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, tenant_id, transaction_group_id, nomba_txn_ref, account_type, account_id,
+		       direction, amount, fee, currency, status, reverses_group_id, narration, created_at
+		FROM ledger_entries
+		WHERE tenant_id = $1
+		  AND status = 'needs_review'
+		  AND account_type = 'virtual_account'
+		ORDER BY created_at DESC
+	`, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanEntries(rows)
+}
+
 func (r *LedgerRepo) ListProvisional(ctx context.Context) ([]model.LedgerEntry, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, tenant_id, transaction_group_id, nomba_txn_ref, account_type, account_id,

@@ -50,3 +50,15 @@ func (h *WebhookHandler) ListMisdirected(w http.ResponseWriter, r *http.Request)
 
 	apierror.WriteJSON(w, http.StatusOK, map[string]any{"events": events})
 }
+
+func (h *WebhookHandler) ListNeedsReview(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenant(r.Context())
+
+	entries, err := h.store.Ledger.ListNeedsReview(r.Context(), tenant.ID)
+	if err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	apierror.WriteJSON(w, http.StatusOK, map[string]any{"entries": entries})
+}

@@ -46,10 +46,10 @@ export default function StatementPage() {
   const lines = data?.pages.flatMap(p => p.lines ?? []) ?? []
 
   if (isLoading) return (
-    <div style={{ ...MONO, padding: 28, fontSize: 11, color: 'var(--text-faint)', letterSpacing: '0.12em' }}>LOADING...</div>
+    <div style={{ ...MONO, padding: 28, fontSize: 12, color: 'var(--text-faint)', letterSpacing: '0.12em' }}>LOADING...</div>
   )
   if (error) return (
-    <div style={{ ...MONO, padding: 28, fontSize: 11, color: 'var(--red)', letterSpacing: '0.1em' }}>{error.message}</div>
+    <div style={{ ...MONO, padding: 28, fontSize: 12, color: 'var(--red)', letterSpacing: '0.1em' }}>{error.message}</div>
   )
 
   const accountLabel = accountData?.BankAccountName ?? accountRef
@@ -60,7 +60,7 @@ export default function StatementPage() {
       {/* Breadcrumb */}
       <Link
         to={`/accounts/${accountRef}`}
-        style={{ ...MONO, fontSize: 10, color: 'var(--text-faint)', textDecoration: 'none', letterSpacing: '0.12em', display: 'inline-block', marginBottom: 24 }}
+        style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none', letterSpacing: '0.12em', display: 'inline-block', marginBottom: 24 }}
         onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
         onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-faint)' }}
       >
@@ -70,8 +70,8 @@ export default function StatementPage() {
       {/* Title */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 5 }}>{accountRef}</div>
-          <h1 style={{ ...MONO, fontSize: 17, color: 'var(--text)', letterSpacing: '0.08em' }}>{accountLabel?.toUpperCase()} — STATEMENT</h1>
+          <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 5 }}>{accountRef}</div>
+          <h1 style={{ ...MONO, fontSize: 19, color: 'var(--text)', letterSpacing: '0.08em' }}>{accountLabel?.toUpperCase()} — STATEMENT</h1>
         </div>
       </div>
 
@@ -85,8 +85,8 @@ export default function StatementPage() {
             ['OPENING BALANCE', summary.openingBalance, 'var(--text-muted)'],
           ] as [string, string, string][]).map(([label, value, color]) => (
             <div key={label} style={{ background: 'var(--surface)', padding: '14px 16px' }}>
-              <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 8 }}>{label}</div>
-              <div style={{ ...MONO, fontSize: 14, color, fontWeight: 500 }}>NGN {ngn(value)}</div>
+              <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 8 }}>{label}</div>
+              <div style={{ ...MONO, fontSize: 15, color, fontWeight: 500 }}>NGN {ngn(value)}</div>
             </div>
           ))}
         </div>
@@ -98,7 +98,7 @@ export default function StatementPage() {
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-raised)' }}>
               {COLS.map(([h, align]) => (
-                <th key={h} style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-muted)', padding: '10px 14px', textAlign: align, fontWeight: 500 }}>
+                <th key={h} style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-muted)', padding: '10px 14px', textAlign: align, fontWeight: 500 }}>
                   {h}
                 </th>
               ))}
@@ -116,29 +116,29 @@ export default function StatementPage() {
                   onMouseLeave={e => { e.currentTarget.style.background = '' }}
                 >
                   <td style={{ padding: '10px 14px' }}>
-                    <span style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: amtColor }}>
+                    <span style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: amtColor }}>
                       {entry.Direction.toUpperCase()}
                     </span>
                   </td>
-                  <td style={{ ...MONO, fontSize: 12, color: amtColor, padding: '10px 14px', textAlign: 'right' }}>
+                  <td style={{ ...MONO, fontSize: 13, color: amtColor, padding: '10px 14px', textAlign: 'right' }}>
                     {isCredit ? '+' : '-'}{ngn(entry.Amount)}
                   </td>
-                  <td style={{ ...MONO, fontSize: 11, color: 'var(--text-muted)', padding: '10px 14px', textAlign: 'right' }}>
+                  <td style={{ ...MONO, fontSize: 12, color: 'var(--text-muted)', padding: '10px 14px', textAlign: 'right' }}>
                     {parseFloat(entry.Fee) > 0 ? ngn(entry.Fee) : '—'}
                   </td>
-                  <td style={{ ...MONO, fontSize: 12, color: 'var(--text-muted)', padding: '10px 14px', textAlign: 'right' }}>
+                  <td style={{ ...MONO, fontSize: 13, color: 'var(--text-muted)', padding: '10px 14px', textAlign: 'right' }}>
                     {ngn(runningBalance)}
                   </td>
                   <td style={{ padding: '10px 14px' }}>
                     <StatusBadge status={entry.Status} />
                   </td>
                   <td
-                    style={{ fontSize: 11, color: 'var(--text-muted)', padding: '10px 14px', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}
+                    style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px 14px', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)' }}
                     title={entry.Narration ?? ''}
                   >
                     {entry.Narration ?? '—'}
                   </td>
-                  <td style={{ ...MONO, fontSize: 10, color: 'var(--text-muted)', padding: '10px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
+                  <td style={{ ...MONO, fontSize: 11, color: 'var(--text-muted)', padding: '10px 14px', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
                     {new Date(entry.CreatedAt).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </td>
                 </tr>
@@ -146,7 +146,7 @@ export default function StatementPage() {
             })}
             {lines.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '52px 16px', letterSpacing: '0.12em' }}>
+                <td colSpan={7} style={{ ...MONO, fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '52px 16px', letterSpacing: '0.12em' }}>
                   NO ENTRIES YET
                 </td>
               </tr>
@@ -159,7 +159,7 @@ export default function StatementPage() {
             <button
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
-              style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: isFetchingNextPage ? 0.5 : 1 }}
+              style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: isFetchingNextPage ? 0.5 : 1 }}
             >
               {isFetchingNextPage ? 'LOADING...' : 'LOAD MORE →'}
             </button>

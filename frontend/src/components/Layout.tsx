@@ -50,7 +50,7 @@ export default function Layout({ children, onLogout }: Props) {
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
             <span style={{
               fontFamily: "'Bungee Inline', sans-serif",
-              fontSize: 18,
+              fontSize: 20,
               letterSpacing: '0.06em',
               color: 'var(--text)',
             }}>
@@ -73,7 +73,7 @@ export default function Layout({ children, onLogout }: Props) {
                 }}>
                   <span style={{
                     ...MONO,
-                    fontSize: 10,
+                    fontSize: 11,
                     letterSpacing: '0.14em',
                     color: isActive ? 'var(--accent)' : 'var(--text-muted)',
                   }}>
@@ -97,7 +97,7 @@ export default function Layout({ children, onLogout }: Props) {
               onMouseEnter={e => { (e.currentTarget.querySelector('span') as HTMLElement).style.color = 'var(--accent)' }}
               onMouseLeave={e => { (e.currentTarget.querySelector('span') as HTMLElement).style.color = 'var(--text-faint)' }}
             >
-              <span style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-faint)' }}>
+              <span style={{ ...MONO, fontSize: 11, letterSpacing: '0.14em', color: 'var(--text-faint)' }}>
                 DOCS ↗
               </span>
             </div>
@@ -105,26 +105,26 @@ export default function Layout({ children, onLogout }: Props) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '14px 20px 20px', borderTop: '1px solid var(--border)' }}>
+        <div style={{ padding: '18px 20px 24px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 18 }}>
 
           {/* Health */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <div style={{
               width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
               background: healthy === undefined ? 'var(--border)' : healthy ? 'var(--green)' : 'var(--red)',
             }} />
-            <span style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-faint)' }}>
+            <span style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-faint)' }}>
               {healthy === undefined ? 'CHECKING' : healthy ? 'API ONLINE' : 'API OFFLINE'}
             </span>
           </div>
 
           {/* Tenant */}
           {me && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-faint)', marginBottom: 2 }}>
+            <div>
+              <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-faint)', marginBottom: 4 }}>
                 TENANT
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={me.name}>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={me.name}>
                 {me.name}
               </div>
             </div>
@@ -134,7 +134,7 @@ export default function Layout({ children, onLogout }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <button
               onClick={onLogout}
-              style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-faint)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+              style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-faint)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
               onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)' }}
               onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-faint)' }}
             >

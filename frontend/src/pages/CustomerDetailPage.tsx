@@ -38,7 +38,7 @@ const KYC_STATUS_LABEL: Record<string, string> = {
 }
 
 const inputStyle: React.CSSProperties = {
-  ...MONO, fontSize: 12, background: 'var(--surface-raised)', border: '1px solid var(--border)',
+  ...MONO, fontSize: 13, background: 'var(--surface-raised)', border: '1px solid var(--border)',
   color: 'var(--text)', padding: '9px 12px', outline: 'none', boxSizing: 'border-box',
 }
 
@@ -110,10 +110,10 @@ export default function CustomerDetailPage() {
   }
 
   if (isLoading) return (
-    <div style={{ ...MONO, padding: 28, fontSize: 11, color: 'var(--text-faint)', letterSpacing: '0.12em' }}>LOADING...</div>
+    <div style={{ ...MONO, padding: 28, fontSize: 12, color: 'var(--text-faint)', letterSpacing: '0.12em' }}>LOADING...</div>
   )
   if (error) return (
-    <div style={{ ...MONO, padding: 28, fontSize: 11, color: 'var(--red)', letterSpacing: '0.1em' }}>{(error as Error).message}</div>
+    <div style={{ ...MONO, padding: 28, fontSize: 12, color: 'var(--red)', letterSpacing: '0.1em' }}>{(error as Error).message}</div>
   )
   if (!customer) return null
 
@@ -140,7 +140,7 @@ export default function CustomerDetailPage() {
       {/* Back */}
       <Link
         to="/customers"
-        style={{ ...MONO, fontSize: 10, color: 'var(--text-faint)', textDecoration: 'none', letterSpacing: '0.12em', display: 'inline-block', marginBottom: 24 }}
+        style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none', letterSpacing: '0.12em', display: 'inline-block', marginBottom: 24 }}
         onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
         onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-faint)' }}
       >
@@ -150,14 +150,14 @@ export default function CustomerDetailPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
-          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 4 }}>CUSTOMER</div>
-          <h1 style={{ ...MONO, fontSize: 18, color: 'var(--text)', letterSpacing: '0.04em' }}>{customer.Name}</h1>
+          <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 4 }}>CUSTOMER</div>
+          <h1 style={{ ...MONO, fontSize: 20, color: 'var(--text)', letterSpacing: '0.04em' }}>{customer.Name}</h1>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-          <span style={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', color: tierColor, background: `${tierColor}1A`, border: `1px solid ${tierColor}44`, padding: '4px 12px' }}>
+          <span style={{ ...MONO, fontSize: 11, letterSpacing: '0.1em', color: tierColor, background: `${tierColor}1A`, border: `1px solid ${tierColor}44`, padding: '4px 12px' }}>
             {tierLabel}
           </span>
-          <span style={{ ...MONO, fontSize: 9, letterSpacing: '0.1em', color: statusColor, padding: '3px 0' }}>
+          <span style={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', color: statusColor, padding: '3px 0' }}>
             {statusLabel}
           </span>
         </div>
@@ -174,10 +174,10 @@ export default function CustomerDetailPage() {
                 display: 'flex', alignItems: 'flex-start', gap: 16, padding: '10px 16px',
                 borderBottom: i < rows.length - 1 ? '1px solid var(--border-subtle)' : 'none',
               }}>
-                <span style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-muted)', width: 130, flexShrink: 0, paddingTop: 1 }}>
+                <span style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-muted)', width: 130, flexShrink: 0, paddingTop: 1 }}>
                   {label}
                 </span>
-                <span style={{ ...MONO, fontSize: 12, color: value ? 'var(--text)' : 'var(--text-faint)', letterSpacing: '0.04em' }}>
+                <span style={{ ...MONO, fontSize: 13, color: value ? 'var(--text)' : 'var(--text-faint)', letterSpacing: '0.04em' }}>
                   {value ?? '—'}
                 </span>
               </div>
@@ -187,10 +187,10 @@ export default function CustomerDetailPage() {
           {/* KYC upgrade form — show when tier < 2 AND status is none */}
           {customer.KYCTier < 2 && kycStatus === 'none' && (
             <div style={{ border: '1px solid var(--border)', padding: '20px' }}>
-              <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--accent)', marginBottom: 12 }}>
+              <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--accent)', marginBottom: 12 }}>
                 UPGRADE TO TIER 2
               </div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
                 Submit NIN and a document image to request Tier 2. Increases daily limit to ₦200,000 and balance cap to ₦500,000.
               </p>
               <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
@@ -206,30 +206,30 @@ export default function CustomerDetailPage() {
                 <input ref={fileInputRef} type="file" accept="image/*,application/pdf" onChange={handleFileChange} style={{ display: 'none' }} />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  style={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', padding: '8px 14px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  style={{ ...MONO, fontSize: 11, letterSpacing: '0.1em', padding: '8px 14px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer', whiteSpace: 'nowrap' }}
                 >
                   ATTACH DOCUMENT
                 </button>
-                <span style={{ ...MONO, fontSize: 11, color: ninDoc ? 'var(--text)' : 'var(--text-faint)' }}>
+                <span style={{ ...MONO, fontSize: 12, color: ninDoc ? 'var(--text)' : 'var(--text-faint)' }}>
                   {ninDocName || 'No file selected'}
                 </span>
               </div>
               <button
                 onClick={handleKYCUpgrade}
                 disabled={kycMutation.isPending}
-                style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '9px 18px', background: 'var(--accent)', color: 'var(--accent-fg)', border: 'none', cursor: kycMutation.isPending ? 'not-allowed' : 'pointer', opacity: kycMutation.isPending ? 0.5 : 1 }}
+                style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '9px 18px', background: 'var(--accent)', color: 'var(--accent-fg)', border: 'none', cursor: kycMutation.isPending ? 'not-allowed' : 'pointer', opacity: kycMutation.isPending ? 0.5 : 1 }}
               >
                 {kycMutation.isPending ? '...' : 'SUBMIT FOR REVIEW'}
               </button>
               {ninError && (
-                <p style={{ ...MONO, fontSize: 11, color: 'var(--red)', marginTop: 10, letterSpacing: '0.06em' }}>{ninError}</p>
+                <p style={{ ...MONO, fontSize: 12, color: 'var(--red)', marginTop: 10, letterSpacing: '0.06em' }}>{ninError}</p>
               )}
             </div>
           )}
 
           {kycStatus === 'rejected' && customer.KYCTier < 2 && (
             <div style={{ border: '1px solid rgba(239,68,68,0.25)', padding: '14px 16px' }}>
-              <span style={{ ...MONO, fontSize: 10, color: 'var(--red)', letterSpacing: '0.12em' }}>
+              <span style={{ ...MONO, fontSize: 11, color: 'var(--red)', letterSpacing: '0.12em' }}>
                 KYC REJECTED — customer may resubmit with corrected documents.
               </span>
             </div>
@@ -237,7 +237,7 @@ export default function CustomerDetailPage() {
 
           {customer.KYCTier === 2 && (
             <div style={{ border: '1px solid rgba(34,197,94,0.25)', padding: '14px 16px' }}>
-              <span style={{ ...MONO, fontSize: 10, color: '#22c55e', letterSpacing: '0.12em' }}>
+              <span style={{ ...MONO, fontSize: 11, color: '#22c55e', letterSpacing: '0.12em' }}>
                 TIER 3 UPGRADE — requires manual review. Contact support.
               </span>
             </div>
@@ -249,15 +249,15 @@ export default function CustomerDetailPage() {
 
           {/* Limits card */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '18px 20px' }}>
-            <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-faint)', marginBottom: 14 }}>KYC LIMITS</div>
+            <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-faint)', marginBottom: 14 }}>KYC LIMITS</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 4 }}>DAILY LIMIT</div>
-                <div style={{ ...MONO, fontSize: 15, color: 'var(--text)' }}>{limits.daily}</div>
+                <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 4 }}>DAILY LIMIT</div>
+                <div style={{ ...MONO, fontSize: 17, color: 'var(--text)' }}>{limits.daily}</div>
               </div>
               <div>
-                <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 4 }}>BALANCE CAP</div>
-                <div style={{ ...MONO, fontSize: 15, color: 'var(--text)' }}>{limits.balance}</div>
+                <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 4 }}>BALANCE CAP</div>
+                <div style={{ ...MONO, fontSize: 17, color: 'var(--text)' }}>{limits.balance}</div>
               </div>
             </div>
           </div>
@@ -265,30 +265,30 @@ export default function CustomerDetailPage() {
           {/* Admin review panel — visible when pending_review */}
           {kycStatus === 'pending_review' && (
             <div style={{ border: '1px solid rgba(255,205,50,0.3)', padding: '18px 20px' }}>
-              <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--accent)', marginBottom: 10 }}>
+              <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--accent)', marginBottom: 10 }}>
                 PENDING KYC REVIEW
               </div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
                 NIN and document submitted. Approve to upgrade to Tier 2, or reject to request resubmission.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <button
                   onClick={() => { setAdminError(''); approveMutation.mutate() }}
                   disabled={adminBusy}
-                  style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '9px', background: '#22c55e', color: '#0D0D0D', border: 'none', cursor: adminBusy ? 'not-allowed' : 'pointer', opacity: adminBusy ? 0.5 : 1 }}
+                  style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '9px', background: '#22c55e', color: '#0D0D0D', border: 'none', cursor: adminBusy ? 'not-allowed' : 'pointer', opacity: adminBusy ? 0.5 : 1 }}
                 >
                   {approveMutation.isPending ? '...' : 'APPROVE →'}
                 </button>
                 <button
                   onClick={() => { setAdminError(''); rejectMutation.mutate() }}
                   disabled={adminBusy}
-                  style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '9px', background: 'transparent', color: 'var(--red)', border: '1px solid var(--red)', cursor: adminBusy ? 'not-allowed' : 'pointer', opacity: adminBusy ? 0.5 : 1 }}
+                  style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '9px', background: 'transparent', color: 'var(--red)', border: '1px solid var(--red)', cursor: adminBusy ? 'not-allowed' : 'pointer', opacity: adminBusy ? 0.5 : 1 }}
                 >
                   {rejectMutation.isPending ? '...' : 'REJECT'}
                 </button>
               </div>
               {adminError && (
-                <p style={{ ...MONO, fontSize: 11, color: 'var(--red)', marginTop: 10, letterSpacing: '0.06em' }}>{adminError}</p>
+                <p style={{ ...MONO, fontSize: 12, color: 'var(--red)', marginTop: 10, letterSpacing: '0.06em' }}>{adminError}</p>
               )}
             </div>
           )}

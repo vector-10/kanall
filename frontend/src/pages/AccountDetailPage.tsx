@@ -8,7 +8,7 @@ import StatusBadge from '../components/StatusBadge'
 const MONO = { fontFamily: 'var(--font-mono)' }
 
 const btn = (variant: 'primary' | 'danger' | 'ghost' | 'outline'): React.CSSProperties => {
-  const base: React.CSSProperties = { ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '8px 16px', border: 'none', cursor: 'pointer' }
+  const base: React.CSSProperties = { ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '8px 16px', border: 'none', cursor: 'pointer' }
   if (variant === 'primary') return { ...base, background: 'var(--accent)', color: 'var(--accent-fg)' }
   if (variant === 'danger')  return { ...base, background: 'transparent', color: 'var(--red)', border: '1px solid var(--red)' }
   if (variant === 'ghost')   return { ...base, background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)' }
@@ -16,7 +16,7 @@ const btn = (variant: 'primary' | 'danger' | 'ghost' | 'outline'): React.CSSProp
 }
 
 const inputStyle: React.CSSProperties = {
-  ...MONO, fontSize: 12, width: '100%',
+  ...MONO, fontSize: 13, width: '100%',
   background: 'var(--surface-raised)', border: '1px solid var(--border)',
   color: 'var(--text)', padding: '8px 12px', outline: 'none', boxSizing: 'border-box',
 }
@@ -113,10 +113,10 @@ export default function AccountDetailPage() {
 
   // Loading / error states
   if (isLoading) return (
-    <div style={{ ...MONO, padding: 40, fontSize: 11, color: 'var(--text-faint)', letterSpacing: '0.12em' }}>LOADING...</div>
+    <div style={{ ...MONO, padding: 40, fontSize: 12, color: 'var(--text-faint)', letterSpacing: '0.12em' }}>LOADING...</div>
   )
   if (error) return (
-    <div style={{ ...MONO, padding: 40, fontSize: 11, color: 'var(--red)' }}>{(error as Error).message}</div>
+    <div style={{ ...MONO, padding: 40, fontSize: 12, color: 'var(--red)' }}>{(error as Error).message}</div>
   )
   if (!account) return null
 
@@ -137,7 +137,7 @@ export default function AccountDetailPage() {
       {/* Back */}
       <Link
         to="/accounts"
-        style={{ ...MONO, fontSize: 10, color: 'var(--text-faint)', textDecoration: 'none', letterSpacing: '0.12em', display: 'inline-block', marginBottom: 24 }}
+        style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none', letterSpacing: '0.12em', display: 'inline-block', marginBottom: 24 }}
         onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
         onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-faint)' }}
       >
@@ -147,10 +147,10 @@ export default function AccountDetailPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
-          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 4 }}>
+          <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 4 }}>
             {account.Provider.toUpperCase()}
           </div>
-          <h1 style={{ ...MONO, fontSize: 18, color: 'var(--text)', letterSpacing: '0.04em', wordBreak: 'break-all' }}>
+          <h1 style={{ ...MONO, fontSize: 20, color: 'var(--text)', letterSpacing: '0.04em', wordBreak: 'break-all' }}>
             {account.BankAccountName ?? account.AccountRef}
           </h1>
         </div>
@@ -169,12 +169,12 @@ export default function AccountDetailPage() {
                 padding: '10px 16px',
                 borderBottom: i < rows.length - 1 ? '1px solid var(--border-subtle)' : 'none',
               }}>
-                <span style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-muted)', width: 130, flexShrink: 0, paddingTop: 1 }}>
+                <span style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-muted)', width: 130, flexShrink: 0, paddingTop: 1 }}>
                   {label}
                 </span>
                 <span style={{
                   fontFamily: mono ? 'var(--font-mono)' : 'var(--font-sans)',
-                  fontSize: 12, color: value ? 'var(--text)' : 'var(--text-faint)',
+                  fontSize: 13, color: value ? 'var(--text)' : 'var(--text-faint)',
                   letterSpacing: mono ? '0.06em' : 0, wordBreak: 'break-all',
                 }}>
                   {value ?? '—'}
@@ -186,30 +186,30 @@ export default function AccountDetailPage() {
           {/* State history */}
           <button
             onClick={() => setShowHistory(v => !v)}
-            style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '8px 16px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: showHistory ? 16 : 0 }}
+            style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '8px 16px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: showHistory ? 16 : 0 }}
           >
             {showHistory ? 'HIDE HISTORY' : 'VIEW HISTORY'}
           </button>
 
           {showHistory && (
             <div style={{ borderLeft: '2px solid var(--border)', paddingLeft: 18, marginTop: 16 }}>
-              <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-faint)', marginBottom: 14 }}>
+              <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-faint)', marginBottom: 14 }}>
                 ACCOUNT STATE HISTORY
               </div>
               {(historyData?.history ?? []).length === 0 ? (
-                <span style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)' }}>No history yet.</span>
+                <span style={{ ...MONO, fontSize: 12, color: 'var(--text-faint)' }}>No history yet.</span>
               ) : (
                 (historyData?.history ?? []).map(entry => (
                   <div key={entry.ID} style={{ display: 'flex', gap: 14, marginBottom: 12, alignItems: 'flex-start' }}>
-                    <div style={{ ...MONO, fontSize: 10, color: 'var(--text-faint)', whiteSpace: 'nowrap', paddingTop: 1 }}>
+                    <div style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', whiteSpace: 'nowrap', paddingTop: 1 }}>
                       {new Date(entry.CreatedAt).toLocaleDateString('en-NG', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
                     <div>
-                      <div style={{ ...MONO, fontSize: 11, color: 'var(--text)', letterSpacing: '0.06em' }}>
+                      <div style={{ ...MONO, fontSize: 12, color: 'var(--text)', letterSpacing: '0.06em' }}>
                         {entry.FromStatus ? `${entry.FromStatus.toUpperCase()} → ` : ''}{entry.ToStatus.toUpperCase()}
                       </div>
                       {entry.Reason && (
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{entry.Reason}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{entry.Reason}</div>
                       )}
                     </div>
                   </div>
@@ -224,13 +224,13 @@ export default function AccountDetailPage() {
 
           {/* Balance card */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '20px 20px' }}>
-            <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-muted)', marginBottom: 6 }}>BALANCE</div>
+            <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-muted)', marginBottom: 6 }}>BALANCE</div>
             {balanceData ? (
-              <div style={{ ...MONO, fontSize: 26, color: 'var(--accent)', letterSpacing: '0.02em', lineHeight: 1 }}>
+              <div style={{ ...MONO, fontSize: 29, color: 'var(--accent)', letterSpacing: '0.02em', lineHeight: 1 }}>
                 ₦{Number(balanceData.balance).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
               </div>
             ) : (
-              <div style={{ ...MONO, fontSize: 22, color: 'var(--text-faint)' }}>—</div>
+              <div style={{ ...MONO, fontSize: 24, color: 'var(--text-faint)' }}>—</div>
             )}
           </div>
 
@@ -266,7 +266,7 @@ export default function AccountDetailPage() {
                       CANCEL
                     </button>
                   </div>
-                  {renameError && <p style={{ ...MONO, fontSize: 11, color: 'var(--red)' }}>{renameError}</p>}
+                  {renameError && <p style={{ ...MONO, fontSize: 12, color: 'var(--red)' }}>{renameError}</p>}
                 </div>
               )}
             </div>
@@ -285,7 +285,7 @@ export default function AccountDetailPage() {
           {/* Statement */}
           <Link
             to={`/accounts/${accountRef}/statement`}
-            style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '8px 16px', color: 'var(--text-muted)', border: '1px solid var(--border)', textDecoration: 'none', display: 'block' }}
+            style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '8px 16px', color: 'var(--text-muted)', border: '1px solid var(--border)', textDecoration: 'none', display: 'block' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}
           >
@@ -303,7 +303,7 @@ export default function AccountDetailPage() {
           )}
 
           {expireMutation.error && (
-            <p style={{ ...MONO, fontSize: 11, color: 'var(--red)' }}>{expireMutation.error.message}</p>
+            <p style={{ ...MONO, fontSize: 12, color: 'var(--red)' }}>{expireMutation.error.message}</p>
           )}
         </div>
       </div>
@@ -312,16 +312,16 @@ export default function AccountDetailPage() {
       {showExpireConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: 32, maxWidth: 440, width: '90%' }}>
-            <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: 'var(--red)', marginBottom: 12 }}>
+            <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.16em', color: 'var(--red)', marginBottom: 12 }}>
               IRREVERSIBLE ACTION
             </div>
-            <h3 style={{ ...MONO, fontSize: 15, color: 'var(--text)', letterSpacing: '0.04em', marginBottom: 12 }}>
+            <h3 style={{ ...MONO, fontSize: 17, color: 'var(--text)', letterSpacing: '0.04em', marginBottom: 12 }}>
               Expire Account?
             </h3>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 8 }}>
+            <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 8 }}>
               This will permanently expire <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{account.BankAccountNumber}</strong>.
             </p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 24 }}>
+            <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 24 }}>
               The account will stop accepting payments and cannot be reactivated.
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
@@ -358,29 +358,29 @@ export default function AccountDetailPage() {
             {/* Panel header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
               <div>
-                <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 3 }}>OUTBOUND</div>
-                <div style={{ ...MONO, fontSize: 14, color: 'var(--text)', letterSpacing: '0.06em' }}>SETTLEMENT</div>
+                <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 3 }}>OUTBOUND</div>
+                <div style={{ ...MONO, fontSize: 15, color: 'var(--text)', letterSpacing: '0.06em' }}>SETTLEMENT</div>
               </div>
-              <button onClick={() => setPayoutOpen(false)} style={{ ...MONO, fontSize: 18, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', lineHeight: 1 }}>×</button>
+              <button onClick={() => setPayoutOpen(false)} style={{ ...MONO, fontSize: 20, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', lineHeight: 1 }}>×</button>
             </div>
 
             {settleResult ? (
               /* Success state */
               <div>
-                <div style={{ ...MONO, fontSize: 11, color: 'var(--green)', letterSpacing: '0.08em', marginBottom: 20 }}>QUEUED ✓</div>
+                <div style={{ ...MONO, fontSize: 12, color: 'var(--green)', letterSpacing: '0.08em', marginBottom: 20 }}>QUEUED ✓</div>
                 <div style={{ border: '1px solid var(--border)', padding: 20, marginBottom: 20 }}>
                   <div style={{ marginBottom: 14 }}>
-                    <div style={{ ...MONO, fontSize: 9, color: 'var(--text-faint)', letterSpacing: '0.12em', marginBottom: 4 }}>MERCHANT REF</div>
-                    <div style={{ ...MONO, fontSize: 11, color: 'var(--text)', letterSpacing: '0.06em', wordBreak: 'break-all' }}>{settleResult.merchantTxRef}</div>
+                    <div style={{ ...MONO, fontSize: 10, color: 'var(--text-faint)', letterSpacing: '0.12em', marginBottom: 4 }}>MERCHANT REF</div>
+                    <div style={{ ...MONO, fontSize: 12, color: 'var(--text)', letterSpacing: '0.06em', wordBreak: 'break-all' }}>{settleResult.merchantTxRef}</div>
                   </div>
                   <div>
-                    <div style={{ ...MONO, fontSize: 9, color: 'var(--text-faint)', letterSpacing: '0.12em', marginBottom: 4 }}>AMOUNT</div>
-                    <div style={{ ...MONO, fontSize: 22, color: 'var(--accent)' }}>
+                    <div style={{ ...MONO, fontSize: 10, color: 'var(--text-faint)', letterSpacing: '0.12em', marginBottom: 4 }}>AMOUNT</div>
+                    <div style={{ ...MONO, fontSize: 24, color: 'var(--accent)' }}>
                       ₦{Number(settleResult.amount).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
                     </div>
                   </div>
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 20 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 20 }}>
                   The transfer has been queued. It will be processed within seconds. Check the statement for confirmation.
                 </p>
                 <button onClick={() => setSettleResult(null)} style={{ ...btn('ghost'), width: '100%' }}>
@@ -393,7 +393,7 @@ export default function AccountDetailPage() {
 
                 {/* Bank */}
                 <div>
-                  <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>BANK</div>
+                  <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>BANK</div>
                   <select
                     value={payBankCode}
                     onChange={e => {
@@ -414,7 +414,7 @@ export default function AccountDetailPage() {
 
                 {/* Account number */}
                 <div>
-                  <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>ACCOUNT NUMBER</div>
+                  <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>ACCOUNT NUMBER</div>
                   <input
                     type="text"
                     value={payAccountNumber}
@@ -425,21 +425,21 @@ export default function AccountDetailPage() {
                     style={inputStyle}
                   />
                   {lookupMutation.isPending && (
-                    <div style={{ ...MONO, fontSize: 10, color: 'var(--text-faint)', marginTop: 4 }}>verifying...</div>
+                    <div style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>verifying...</div>
                   )}
                   {lookedUpAccount && (
-                    <div style={{ ...MONO, fontSize: 11, color: 'var(--green)', marginTop: 4, letterSpacing: '0.06em' }}>
+                    <div style={{ ...MONO, fontSize: 12, color: 'var(--green)', marginTop: 4, letterSpacing: '0.06em' }}>
                       ✓ {lookedUpAccount.AccountName}
                     </div>
                   )}
                   {lookupErr && (
-                    <div style={{ ...MONO, fontSize: 11, color: 'var(--red)', marginTop: 4 }}>{lookupErr}</div>
+                    <div style={{ ...MONO, fontSize: 12, color: 'var(--red)', marginTop: 4 }}>{lookupErr}</div>
                   )}
                 </div>
 
                 {/* Amount */}
                 <div>
-                  <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>AMOUNT (NGN)</div>
+                  <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>AMOUNT (NGN)</div>
                   <input
                     type="text"
                     value={payAmount}
@@ -451,7 +451,7 @@ export default function AccountDetailPage() {
 
                 {/* Narration */}
                 <div>
-                  <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>
                     NARRATION <span style={{ color: 'var(--text-faint)' }}>(optional)</span>
                   </div>
                   <input
@@ -464,14 +464,14 @@ export default function AccountDetailPage() {
                 </div>
 
                 {settleErr && (
-                  <p style={{ ...MONO, fontSize: 11, color: 'var(--red)' }}>{settleErr}</p>
+                  <p style={{ ...MONO, fontSize: 12, color: 'var(--red)' }}>{settleErr}</p>
                 )}
 
                 <button
                   onClick={() => settleMutation.mutate()}
                   disabled={!lookedUpAccount || !payAmount || !payBankCode || settleMutation.isPending}
                   style={{
-                    ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '11px 20px',
+                    ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '11px 20px',
                     background: (lookedUpAccount && payAmount && payBankCode) ? 'var(--accent)' : 'var(--surface-raised)',
                     color: (lookedUpAccount && payAmount && payBankCode) ? 'var(--accent-fg)' : 'var(--text-faint)',
                     border: 'none',

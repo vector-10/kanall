@@ -97,6 +97,7 @@ func NewRouter(
 		r.With(accountWriteRL.ByAPIKey).Post("/customers/{id}/kyc", customerH.UpgradeKYC)
 
 		r.With(accountReadRL.ByAPIKey).Get("/webhooks/dead-letters", webhookH.ListDeadLetters)
+		r.With(accountReadRL.ByAPIKey).Get("/webhooks/needs-review", webhookH.ListNeedsReview)
 
 		r.With(accountReadRL.ByAPIKey).Get("/fees/calculate", feeH.Calculate)
 

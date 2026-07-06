@@ -71,7 +71,7 @@ export interface LedgerEntry {
   Amount: string
   Fee: string
   Currency: string
-  Status: 'provisional' | 'confirmed' | 'reversed'
+  Status: 'provisional' | 'confirmed' | 'reversed' | 'needs_review'
   Narration: string | null
   NombaTxnRef: string
   CreatedAt: string
@@ -245,6 +245,9 @@ export const api = {
 
     misdirected: () =>
       request<{ events: WebhookEvent[] | null }>('GET', '/auth/misdirected'),
+
+    needsReview: () =>
+      request<{ entries: LedgerEntry[] | null }>('GET', '/v1/webhooks/needs-review'),
   },
 
   settlement: {

@@ -14,7 +14,7 @@ const inputStyle: React.CSSProperties = {
   background: 'var(--surface-raised)',
   border: '1px solid var(--border)',
   padding: '8px 12px',
-  fontSize: 12,
+  fontSize: 13,
   color: 'var(--text)',
   outline: 'none',
 }
@@ -22,7 +22,7 @@ const inputStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   ...MONO,
   display: 'block',
-  fontSize: 10,
+  fontSize: 11,
   letterSpacing: '0.1em',
   color: 'var(--text-muted)',
   marginBottom: 6,
@@ -76,13 +76,13 @@ export default function AccountsPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <div style={{ ...MONO, fontSize: 9, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 4 }}>DASHBOARD</div>
-          <h1 style={{ ...MONO, fontSize: 17, color: 'var(--text)', letterSpacing: '0.08em' }}>VIRTUAL ACCOUNTS</h1>
+          <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.16em', color: 'var(--text-faint)', marginBottom: 4 }}>DASHBOARD</div>
+          <h1 style={{ ...MONO, fontSize: 19, color: 'var(--text)', letterSpacing: '0.08em' }}>VIRTUAL ACCOUNTS</h1>
         </div>
         <button
           onClick={() => setShowForm(v => !v)}
           style={{
-            ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '9px 18px',
+            ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '9px 18px',
             background: showForm ? 'transparent' : 'var(--accent)',
             color: showForm ? 'var(--text-muted)' : 'var(--accent-fg)',
             border: showForm ? '1px solid var(--border)' : 'none',
@@ -109,14 +109,14 @@ export default function AccountsPage() {
             {field('expectedAmount', 'EXPECTED AMOUNT (NGN)', '5000.00', false, 'number')}
           </div>
           {createMutation.error && (
-            <p style={{ ...MONO, fontSize: 11, color: 'var(--red)', marginBottom: 12, letterSpacing: '0.06em' }}>
+            <p style={{ ...MONO, fontSize: 12, color: 'var(--red)', marginBottom: 12, letterSpacing: '0.06em' }}>
               {createMutation.error.message}
             </p>
           )}
           <button
             type="submit"
             disabled={createMutation.isPending}
-            style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', padding: '9px 20px', background: 'var(--accent)', color: 'var(--accent-fg)', border: 'none', cursor: 'pointer', opacity: createMutation.isPending ? 0.5 : 1 }}
+            style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '9px 20px', background: 'var(--accent)', color: 'var(--accent-fg)', border: 'none', cursor: 'pointer', opacity: createMutation.isPending ? 0.5 : 1 }}
           >
             {createMutation.isPending ? 'CREATING...' : 'CREATE ACCOUNT →'}
           </button>
@@ -124,7 +124,7 @@ export default function AccountsPage() {
       )}
 
       {error && (
-        <p style={{ ...MONO, fontSize: 11, color: 'var(--red)', marginBottom: 16 }}>{error.message}</p>
+        <p style={{ ...MONO, fontSize: 12, color: 'var(--red)', marginBottom: 16 }}>{error.message}</p>
       )}
 
       {/* Table */}
@@ -133,7 +133,7 @@ export default function AccountsPage() {
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-raised)' }}>
               {['NUBAN', 'ACCOUNT NAME', 'BANK', 'STATUS', 'CREATED', ''].map(h => (
-                <th key={h} style={{ ...MONO, fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-muted)', padding: '10px 16px', textAlign: 'left', fontWeight: 500 }}>
+                <th key={h} style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-muted)', padding: '10px 16px', textAlign: 'left', fontWeight: 500 }}>
                   {h}
                 </th>
               ))}
@@ -147,26 +147,26 @@ export default function AccountsPage() {
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-raised)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = '' }}
               >
-                <td style={{ ...MONO, fontSize: 12, color: 'var(--text)', padding: '12px 16px', letterSpacing: '0.06em' }}>
+                <td style={{ ...MONO, fontSize: 13, color: 'var(--text)', padding: '12px 16px', letterSpacing: '0.06em' }}>
                   {a.BankAccountNumber ?? '—'}
                 </td>
-                <td style={{ fontSize: 12, color: 'var(--text)', padding: '12px 16px', fontFamily: 'var(--font-sans)' }}>
+                <td style={{ fontSize: 13, color: 'var(--text)', padding: '12px 16px', fontFamily: 'var(--font-sans)' }}>
                   {a.BankAccountName ?? '—'}
                 </td>
-                <td style={{ fontSize: 12, color: 'var(--text-muted)', padding: '12px 16px' }}>
+                <td style={{ fontSize: 13, color: 'var(--text-muted)', padding: '12px 16px' }}>
                   {a.BankName ?? '—'}
                 </td>
                 <td style={{ padding: '12px 16px' }}>
                   <StatusBadge status={a.Status} />
                 </td>
-                <td style={{ ...MONO, fontSize: 10, color: 'var(--text-muted)', padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                <td style={{ ...MONO, fontSize: 11, color: 'var(--text-muted)', padding: '12px 16px', whiteSpace: 'nowrap' }}>
                   {new Date(a.CreatedAt).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </td>
                 <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                   <button
                     onClick={() => navigate(`/accounts/${a.AccountRef}`)}
                     style={{
-                      ...MONO, fontSize: 10, letterSpacing: '0.1em',
+                      ...MONO, fontSize: 11, letterSpacing: '0.1em',
                       padding: '6px 14px',
                       background: 'transparent',
                       color: 'var(--accent)',
@@ -184,7 +184,7 @@ export default function AccountsPage() {
             ))}
             {!isLoading && accounts.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '52px 16px', letterSpacing: '0.12em' }}>
+                <td colSpan={6} style={{ ...MONO, fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '52px 16px', letterSpacing: '0.12em' }}>
                   NO ACCOUNTS — CREATE ONE ABOVE
                 </td>
               </tr>
@@ -193,7 +193,7 @@ export default function AccountsPage() {
         </table>
 
         {isLoading && (
-          <div style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', padding: '12px 16px', letterSpacing: '0.1em' }}>LOADING...</div>
+          <div style={{ ...MONO, fontSize: 12, color: 'var(--text-faint)', padding: '12px 16px', letterSpacing: '0.1em' }}>LOADING...</div>
         )}
 
         {hasNextPage && (
@@ -201,7 +201,7 @@ export default function AccountsPage() {
             <button
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
-              style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', opacity: isFetchingNextPage ? 0.5 : 1 }}
+              style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', opacity: isFetchingNextPage ? 0.5 : 1 }}
             >
               {isFetchingNextPage ? 'LOADING...' : 'LOAD MORE →'}
             </button>

@@ -46,7 +46,7 @@ export default function StatusBadge({ status }: { status: string }) {
         background: cfg.bg,
         color: cfg.color,
         fontFamily: 'var(--font-mono)',
-        fontSize: 10,
+        fontSize: 11,
         letterSpacing: '0.1em',
         textDecoration: cfg.strikethrough ? 'line-through' : 'none',
         whiteSpace: 'nowrap',
