@@ -51,9 +51,9 @@ func (w *SettlementWorker) Start(ctx context.Context) {
 }
 
 func (w *SettlementWorker) sweep(ctx context.Context) {
-	jobs, err := w.store.SettlementJobs.ListRetryable(ctx)
+	jobs, err := w.store.SettlementJobs.ClaimBatch(ctx)
 	if err != nil {
-		log.Printf("settlement worker: list failed: %v", err)
+		log.Printf("settlement worker: claim failed: %v", err)
 		return
 	}
 	for _, j := range jobs {

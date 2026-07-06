@@ -10,10 +10,7 @@ import (
 
 type FeeHandler struct{}
 
-// Calculate returns the gross send amount a payer must transfer so the
-// business receives exactly the requested amount after Nomba's NIP fee.
-//
-// GET /v1/fees/calculate?amount=5000
+
 func (h *FeeHandler) Calculate(w http.ResponseWriter, r *http.Request) {
 	raw := r.URL.Query().Get("amount")
 	if raw == "" {

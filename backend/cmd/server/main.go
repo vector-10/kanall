@@ -50,13 +50,12 @@ func main() {
 	log.Println("using NombaProvider")
 	p := provider.NewNombaProvider(cfg)
 
-	// Use BrevoSender when BREVO_API_KEY is set; NoopSender logs instead (dev-friendly)
 	var mailer email.Sender
-	if cfg.BrevoAPIKey != "" {
-		log.Println("email: using BrevoSender")
-		mailer = email.NewBrevoSender(cfg.BrevoAPIKey, cfg.BrevoAPIURL, cfg.EmailFrom, cfg.EmailFromName)
+	if cfg.ResendAPIKey != "" {
+		log.Println("email: using ResendSender")
+		mailer = email.NewResendSender(cfg.ResendAPIKey, cfg.EmailFrom, cfg.EmailFromName)
 	} else {
-		log.Println("email: no BREVO_API_KEY set, using NoopSender")
+		log.Println("email: no RESEND_API_KEY set, using NoopSender")
 		mailer = email.NewNoopSender()
 	}
 

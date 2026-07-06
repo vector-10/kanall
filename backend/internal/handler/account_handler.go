@@ -50,8 +50,6 @@ type listPagination struct {
 	HasMore    bool       `json:"hasMore"`
 }
 
-// fetchVA looks up a virtual account by accountRef for the given tenant.
-// It writes the appropriate error response and returns false if not found.
 func (h *AccountHandler) fetchVA(w http.ResponseWriter, r *http.Request, tenantID uuid.UUID, accountRef string) (*model.VirtualAccount, bool) {
 	va, err := h.store.Accounts.GetByAccountRef(r.Context(), tenantID, accountRef)
 	if err != nil {

@@ -59,11 +59,17 @@ func (s *ConvergenceService) sweep(ctx context.Context) error {
 		log.Printf("convergence: expired %d onetime VA(s) past deadline", n)
 	}
 
-	entries, err := s.store.Ledger.ListProvisional(ctx)
+	provisionals, err := s.store.Ledger.ListProvisional(ctx)
 	if err != nil {
 		return err
 	}
-	if len(entries) == 0 {
+
+	needsReview, err := s.store.Ledger.ListNeedsReviewAll(ctx)
+	if err != nil {
+		log.Printf("convergence: list needs_review failed: %v", err)
+	}
+
+	if len(provisionals) == 0 && len(needsReview) == 0 {
 		return nil
 	}
 
@@ -82,9 +88,9 @@ func (s *ConvergenceService) sweep(ctx context.Context) error {
 		confirmedInBulk[t.TransactionRef] = true
 	}
 
-	// Layer 2: confirm anything found in the bulk list.
+	// Layer 2: confirm provisionals found in the bulk list.
 	seen := make(map[string]bool)
-	for _, e := range entries {
+	for _, e := range provisionals {
 		if seen[e.NombaTxnRef] {
 			continue
 		}
@@ -100,7 +106,7 @@ func (s *ConvergenceService) sweep(ctx context.Context) error {
 	}
 
 	// Layer 3 (aged auditor): targeted requery for provisionals older than 2h.
-	for _, e := range entries {
+	for _, e := range provisionals {
 		if confirmedInBulk[e.NombaTxnRef] {
 			continue
 		}
@@ -124,7 +130,6 @@ func (s *ConvergenceService) sweep(ctx context.Context) error {
 			continue
 		}
 
-		// Not found by targeted requery either.
 		if age > 24*time.Hour {
 			if err := s.store.Ledger.FlagAsNeedsReview(ctx, e.NombaTxnRef); err != nil {
 				log.Printf("convergence: flag needs_review failed for %s: %v", e.NombaTxnRef, err)
@@ -132,6 +137,39 @@ func (s *ConvergenceService) sweep(ctx context.Context) error {
 				log.Printf("convergence: flagged %s as needs_review after 24h without confirmation", e.NombaTxnRef)
 			}
 		}
+	}
+
+	// Layer 4: re-examine needs_review entries using bulk map + targeted requery.
+	// ConfirmByTxnRef now accepts both 'provisional' and 'needs_review' statuses.
+	seenNR := make(map[string]bool)
+	for _, e := range needsReview {
+		if seenNR[e.NombaTxnRef] {
+			continue
+		}
+		seenNR[e.NombaTxnRef] = true
+
+		if confirmedInBulk[e.NombaTxnRef] {
+			if err := s.store.Ledger.ConfirmByTxnRef(ctx, e.NombaTxnRef); err != nil {
+				log.Printf("convergence: needs_review confirm (bulk) failed for %s: %v", e.NombaTxnRef, err)
+			} else {
+				log.Printf("convergence: resolved needs_review %s via bulk sweep", e.NombaTxnRef)
+			}
+			continue
+		}
+
+		found, err := s.provider.FetchInboundTxn(ctx, e.NombaTxnRef)
+		if err != nil {
+			log.Printf("convergence: needs_review requery failed for %s: %v", e.NombaTxnRef, err)
+			continue
+		}
+		if found {
+			if err := s.store.Ledger.ConfirmByTxnRef(ctx, e.NombaTxnRef); err != nil {
+				log.Printf("convergence: needs_review confirm (requery) failed for %s: %v", e.NombaTxnRef, err)
+			} else {
+				log.Printf("convergence: resolved needs_review %s via targeted requery", e.NombaTxnRef)
+			}
+		}
+		// Still not found — leave as needs_review for human review via dashboard.
 	}
 
 	return nil

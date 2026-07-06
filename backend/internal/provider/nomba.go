@@ -29,7 +29,7 @@ func NewNombaProvider(cfg *config.Config) *NombaProvider {
 	}
 }
 
-// Nomba API path constants. All paths relative to NombaBaseURL.
+
 const (
 	nombaPathAuthIssue   = "/v1/auth/token/issue"
 	nombaPathAuthRefresh = "/v1/auth/token/refresh"
@@ -408,7 +408,7 @@ func (n *NombaProvider) Transfer(ctx context.Context, input TransferInput) (Tran
 }
 
 func (n *NombaProvider) Requery(ctx context.Context, merchantTxRef string) (TransferResult, error) {
-	path := fmt.Sprintf(nombaPathTxnSingle+"?transactionRef=%s",
+	path := fmt.Sprintf(nombaPathTxnSingle+"?merchantTxRef=%s",
 		n.cfg.NombaSubAccountID, merchantTxRef)
 	resp, err := n.doRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {

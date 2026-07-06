@@ -20,7 +20,7 @@ var tenantCtxKey = tenantKeyType{}
 func TenantAuth(store *repository.Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// 1. Session cookie (browser / dashboard)
+
 			if cookie, err := r.Cookie("kanall_session"); err == nil && cookie.Value != "" {
 				tokenHash := crypto.HashAPIKey(cookie.Value)
 				session, err := store.Sessions.GetActiveByTokenHash(r.Context(), tokenHash)

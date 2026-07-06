@@ -39,7 +39,6 @@ func Encrypt(plaintext, keyHex string) (string, error) {
 		return "", err
 	}
 
-	// Seal appends ciphertext to nonce so both are stored together
 	sealed := gcm.Seal(nonce, nonce, []byte(plaintext), nil)
 	return base64.StdEncoding.EncodeToString(sealed), nil
 }

@@ -1,0 +1,2 @@
+ALTER TABLE confirmation_jobs
+DROP CONSTRAINT IF EXISTS uq_confirmation_jobs_nomba_txn_ref;

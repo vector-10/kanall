@@ -13,23 +13,33 @@ type SettlementJobRepo struct {
 	pool *pgxpool.Pool
 }
 
-func (r *SettlementJobRepo) ListRetryable(ctx context.Context) ([]model.SettlementJob, error) {
-	rows, err := r.pool.Query(ctx, `
+// ClaimBatch atomically claims up to 50 eligible settlement jobs. It leases
+// each row by advancing next_retry_at by 2 minutes so overlapping sweeps
+// cannot pick up the same job (prevents double disbursement).
+func (r *SettlementJobRepo) ClaimBatch(ctx context.Context) ([]model.SettlementJob, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	rows, err := tx.Query(ctx, `
 		SELECT id, tenant_id, virtual_account_id, transaction_group_id, merchant_tx_ref,
 		       amount_naira, bank_code, account_number, account_name, narration,
 		       status, attempt_count, last_error, next_retry_at, created_at, updated_at
 		FROM settlement_jobs
-		WHERE status = 'pending'
-		   OR (status = 'failed' AND next_retry_at <= now())
+		WHERE (status = 'pending' OR status = 'failed')
+		  AND (next_retry_at IS NULL OR next_retry_at <= now())
 		ORDER BY next_retry_at ASC NULLS FIRST
 		LIMIT 50
+		FOR UPDATE SKIP LOCKED
 	`)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var jobs []model.SettlementJob
+	var ids []uuid.UUID
 	for rows.Next() {
 		var j model.SettlementJob
 		if err := rows.Scan(
@@ -37,11 +47,31 @@ func (r *SettlementJobRepo) ListRetryable(ctx context.Context) ([]model.Settleme
 			&j.AmountNaira, &j.BankCode, &j.AccountNumber, &j.AccountName, &j.Narration,
 			&j.Status, &j.AttemptCount, &j.LastError, &j.NextRetryAt, &j.CreatedAt, &j.UpdatedAt,
 		); err != nil {
+			rows.Close()
 			return nil, err
 		}
 		jobs = append(jobs, j)
+		ids = append(ids, j.ID)
 	}
-	return jobs, rows.Err()
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if len(ids) == 0 {
+		return nil, tx.Commit(ctx)
+	}
+
+	_, err = tx.Exec(ctx, `
+		UPDATE settlement_jobs
+		SET next_retry_at = now() + interval '2 minutes'
+		WHERE id = ANY($1)
+	`, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	return jobs, tx.Commit(ctx)
 }
 
 func (r *SettlementJobRepo) UpdateAfterAttempt(ctx context.Context, id uuid.UUID, status string, lastError *string, nextRetryAt *time.Time) error {

@@ -25,8 +25,7 @@ type Config struct {
 	ConvergenceSweepInterval   time.Duration
 	OutboxHTTPTimeout          time.Duration
 	EncryptionKey              string
-	BrevoAPIKey                string
-	BrevoAPIURL                string
+	ResendAPIKey               string
 	EmailFrom                  string
 	EmailFromName              string
 }
@@ -59,8 +58,7 @@ func LoadConfig() (*Config, error) {
 		ConvergenceSweepInterval:   time.Duration(sweepSeconds) * time.Second,
 		OutboxHTTPTimeout:          time.Duration(outboxTimeoutSeconds) * time.Second,
 		EncryptionKey:              os.Getenv("ENCRYPTION_KEY"),
-		BrevoAPIKey:                os.Getenv("BREVO_API_KEY"),
-		BrevoAPIURL:                getEnv("BREVO_API_URL", "https://api.brevo.com/v3/smtp/email"),
+		ResendAPIKey:               os.Getenv("RESEND_API_KEY"),
 		EmailFrom:                  getEnv("EMAIL_FROM", "noreply@kanall.app"),
 		EmailFromName:              getEnv("EMAIL_FROM_NAME", "Kanall"),
 	}

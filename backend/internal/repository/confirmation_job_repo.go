@@ -18,7 +18,7 @@ func (r *ConfirmationJobRepo) Create(ctx context.Context, job model.Confirmation
 		INSERT INTO confirmation_jobs
 			(id, tenant_id, nomba_txn_ref, transaction_group_id, status, next_retry_at)
 		VALUES ($1, $2, $3, $4, 'pending', now())
-		ON CONFLICT DO NOTHING
+		ON CONFLICT (nomba_txn_ref) DO NOTHING
 	`, job.ID, job.TenantID, job.NombaTxnRef, job.TransactionGroupID)
 	return err
 }

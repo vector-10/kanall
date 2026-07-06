@@ -26,7 +26,7 @@ func (r *LedgerRepo) GetBalance(ctx context.Context, tenantID, accountID uuid.UU
 		)
 		FROM ledger_entries
 		WHERE tenant_id = $1 AND account_id = $2
-		  AND status != 'reversed'
+		  AND status IN ('confirmed', 'provisional')
 	`, tenantID, accountID).Scan(&balance)
 	return balance, err
 }
@@ -100,7 +100,7 @@ func (r *LedgerRepo) PostSettlementIntent(ctx context.Context, debit, credit mod
 	if err := tx.QueryRow(ctx, `
 		SELECT COALESCE(SUM(CASE WHEN direction = 'credit' THEN amount ELSE -amount END), 0::numeric)
 		FROM ledger_entries
-		WHERE tenant_id = $1 AND account_id = $2 AND status != 'reversed'
+		WHERE tenant_id = $1 AND account_id = $2 AND status IN ('confirmed', 'provisional')
 	`, debit.TenantID, debit.AccountID).Scan(&balance); err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (r *LedgerRepo) PostSettlementIntent(ctx context.Context, debit, credit mod
 func (r *LedgerRepo) ConfirmByTxnRef(ctx context.Context, nombaTxnRef string) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE ledger_entries SET status = 'confirmed'
-		WHERE nomba_txn_ref = $1 AND status = 'provisional'
+		WHERE nomba_txn_ref = $1 AND status IN ('provisional', 'needs_review')
 	`, nombaTxnRef)
 	return err
 }
@@ -171,6 +171,22 @@ func (r *LedgerRepo) ListNeedsReview(ctx context.Context, tenantID uuid.UUID) ([
 		  AND account_type = 'virtual_account'
 		ORDER BY created_at DESC
 	`, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanEntries(rows)
+}
+
+func (r *LedgerRepo) ListNeedsReviewAll(ctx context.Context) ([]model.LedgerEntry, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, tenant_id, transaction_group_id, nomba_txn_ref, account_type, account_id,
+		       direction, amount, fee, currency, status, reverses_group_id, narration, created_at
+		FROM ledger_entries
+		WHERE status = 'needs_review'
+		  AND account_type = 'virtual_account'
+		ORDER BY created_at ASC
+	`)
 	if err != nil {
 		return nil, err
 	}
