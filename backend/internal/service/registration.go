@@ -130,7 +130,7 @@ func GenerateAPIKey() (raw, hash string, err error) {
 	if _, err = rand.Reader.Read(b); err != nil {
 		return
 	}
-	raw = hex.EncodeToString(b)
+	raw = "ten_sk_" + hex.EncodeToString(b)
 	hash = crypto.HashAPIKey(raw)
 	return
 }
