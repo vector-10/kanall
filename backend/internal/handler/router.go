@@ -75,6 +75,7 @@ func NewRouter(
 		r.With(middleware.TenantAuth(store)).Get("/me", authH.Me)
 		r.With(middleware.TenantAuth(store)).Post("/rotate-key", authH.RotateKey)
 		r.With(middleware.TenantAuth(store)).Post("/business-kyc", authH.SubmitBusinessKYC)
+		r.With(middleware.TenantAuth(store)).Post("/webhook-url", authH.SetWebhookURL)
 		r.With(middleware.TenantAuth(store)).Post("/webhook-secret", authH.WebhookSecret)
 		r.With(middleware.TenantAuth(store)).Get("/misdirected", webhookH.ListMisdirected)
 		r.With(middleware.TenantAuth(store)).Post("/customers/{id}/kyc/approve", authH.ApproveCustomerKYC)

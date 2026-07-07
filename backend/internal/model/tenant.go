@@ -20,6 +20,7 @@ type Tenant struct {
 	KYCStatus              string
 	KYCSubmittedAt         *time.Time
 	WebhookSecretEncrypted *string
+	WebhookURL             *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }

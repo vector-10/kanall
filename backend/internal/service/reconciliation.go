@@ -245,7 +245,17 @@ func (s *ReconciliationService) postEntries(ctx context.Context, payload webhook
 		s.confirmWorker.Enqueue(job)
 	}
 
+	deliveryURL := ""
 	if va.CallbackURL != nil {
+		deliveryURL = *va.CallbackURL
+	} else {
+		tenant, err := s.store.Tenants.GetByID(ctx, va.TenantID)
+		if err == nil && tenant.WebhookURL != nil {
+			deliveryURL = *tenant.WebhookURL
+		}
+	}
+
+	if deliveryURL != "" {
 		notif, _ := json.Marshal(map[string]any{
 			"eventType":          "payment.received",
 			"transactionGroupId": groupID.String(),
@@ -263,7 +273,7 @@ func (s *ReconciliationService) postEntries(ctx context.Context, payload webhook
 			TenantID:           va.TenantID,
 			TransactionGroupID: groupID,
 			Payload:            notif,
-			CallbackURL:        *va.CallbackURL,
+			CallbackURL:        deliveryURL,
 			Status:             "pending",
 		}
 		if err := s.store.WebhookDeliveries.Create(ctx, delivery); err != nil {

@@ -14,13 +14,13 @@ type TenantRepo struct {
 
 const tenantCols = `id, name, email, api_key_hash, api_key_suffix, password_hash, status,
 	business_type, cac_number, kyc_status, kyc_submitted_at, webhook_secret_encrypted,
-	created_at, updated_at`
+	webhook_url, created_at, updated_at`
 
 func scanTenant(row interface{ Scan(...any) error }, t *model.Tenant) error {
 	return row.Scan(
 		&t.ID, &t.Name, &t.Email, &t.APIKeyHash, &t.APIKeySuffix, &t.PasswordHash, &t.Status,
 		&t.BusinessType, &t.CACNumber, &t.KYCStatus, &t.KYCSubmittedAt, &t.WebhookSecretEncrypted,
-		&t.CreatedAt, &t.UpdatedAt,
+		&t.WebhookURL, &t.CreatedAt, &t.UpdatedAt,
 	)
 }
 
@@ -113,5 +113,13 @@ func (r *TenantRepo) UpdateWebhookSecret(ctx context.Context, id uuid.UUID, encr
 		UPDATE tenants SET webhook_secret_encrypted = $1, updated_at = now()
 		WHERE id = $2
 	`, encryptedSecret, id)
+	return err
+}
+
+func (r *TenantRepo) UpdateWebhookURL(ctx context.Context, id uuid.UUID, url string) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE tenants SET webhook_url = $1, updated_at = now()
+		WHERE id = $2
+	`, url, id)
 	return err
 }

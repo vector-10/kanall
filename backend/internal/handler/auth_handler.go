@@ -85,6 +85,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		"apiKeySuffix": tenant.APIKeySuffix,
 		"kycStatus":    tenant.KYCStatus,
 		"businessType": tenant.BusinessType,
+		"webhookUrl":   tenant.WebhookURL,
 		"createdAt":    tenant.CreatedAt,
 	})
 }
@@ -131,6 +132,35 @@ func (h *AuthHandler) SubmitBusinessKYC(w http.ResponseWriter, r *http.Request) 
 		"kycStatus":    "verified",
 		"businessType": req.BusinessType,
 	})
+}
+
+type setWebhookURLRequest struct {
+	URL string `json:"url"`
+}
+
+func (h *AuthHandler) SetWebhookURL(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenant(r.Context())
+	if tenant == nil {
+		apierror.Respond(w, apierror.Unauthorized())
+		return
+	}
+
+	var req setWebhookURLRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apierror.Respond(w, apierror.BadRequest("invalid request body"))
+		return
+	}
+	if req.URL == "" {
+		apierror.Respond(w, apierror.BadRequest("url is required"))
+		return
+	}
+
+	if err := h.store.Tenants.UpdateWebhookURL(r.Context(), tenant.ID, req.URL); err != nil {
+		internalError(w, r, err)
+		return
+	}
+
+	apierror.WriteJSON(w, http.StatusOK, map[string]string{"webhookUrl": req.URL})
 }
 
 func (h *AuthHandler) WebhookSecret(w http.ResponseWriter, r *http.Request) {
