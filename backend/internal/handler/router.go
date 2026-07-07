@@ -61,6 +61,7 @@ func NewRouter(
 	})
 
 	r.Get("/health", health)
+	r.Head("/health", health)
 	r.Get("/webhooks/nomba", func(w http.ResponseWriter, r *http.Request) {
 		apierror.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
