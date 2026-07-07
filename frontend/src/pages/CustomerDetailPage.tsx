@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api'
@@ -45,11 +45,7 @@ const inputStyle: React.CSSProperties = {
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
   const [ninInput, setNINInput] = useState('')
-  const [ninDoc, setNinDoc] = useState<string>('')
-  const [ninDocName, setNinDocName] = useState<string>('')
   const [ninError, setNINError] = useState('')
   const [adminError, setAdminError] = useState('')
 
@@ -60,12 +56,11 @@ export default function CustomerDetailPage() {
   })
 
   const kycMutation = useMutation({
-    mutationFn: ({ nin, doc }: { nin: string; doc: string }) =>
-      api.customers.upgradeKYC(id!, nin, doc),
+    mutationFn: (nin: string) => api.customers.upgradeKYC(id!, nin),
     onSuccess: (updated) => {
       queryClient.setQueryData(['customer', id], updated)
       queryClient.invalidateQueries({ queryKey: ['customers'] })
-      setNINInput(''); setNinDoc(''); setNinDocName(''); setNINError('')
+      setNINInput(''); setNINError('')
     },
     onError: (err: Error) => setNINError(err.message),
   })
@@ -90,23 +85,13 @@ export default function CustomerDetailPage() {
     onError: (err: Error) => setAdminError(err.message),
   })
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setNinDocName(file.name)
-    const reader = new FileReader()
-    reader.onload = () => { setNinDoc((reader.result as string).split(',')[1] ?? '') }
-    reader.readAsDataURL(file)
-  }
-
   const handleKYCUpgrade = () => {
     if (ninInput.length !== 11 || !/^\d+$/.test(ninInput)) {
       setNINError('NIN must be exactly 11 digits')
       return
     }
-    if (!ninDoc) { setNINError('NIN document image is required'); return }
     setNINError('')
-    kycMutation.mutate({ nin: ninInput, doc: ninDoc })
+    kycMutation.mutate(ninInput)
   }
 
   if (isLoading) return (
@@ -201,18 +186,6 @@ export default function CustomerDetailPage() {
                   placeholder="11-digit NIN"
                   style={{ ...inputStyle, flex: 1, letterSpacing: '0.06em' }}
                 />
-              </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14 }}>
-                <input ref={fileInputRef} type="file" accept="image/*,application/pdf" onChange={handleFileChange} style={{ display: 'none' }} />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{ ...MONO, fontSize: 11, letterSpacing: '0.1em', padding: '8px 14px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                >
-                  ATTACH DOCUMENT
-                </button>
-                <span style={{ ...MONO, fontSize: 12, color: ninDoc ? 'var(--text)' : 'var(--text-faint)' }}>
-                  {ninDocName || 'No file selected'}
-                </span>
               </div>
               <button
                 onClick={handleKYCUpgrade}

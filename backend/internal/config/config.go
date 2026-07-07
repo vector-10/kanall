@@ -28,6 +28,7 @@ type Config struct {
 	ResendAPIKey               string
 	EmailFrom                  string
 	EmailFromName              string
+	MonoSecretKey              string
 }
 
 
@@ -61,6 +62,7 @@ func LoadConfig() (*Config, error) {
 		ResendAPIKey:               os.Getenv("RESEND_API_KEY"),
 		EmailFrom:                  getEnv("EMAIL_FROM", "noreply@kanall.app"),
 		EmailFromName:              getEnv("EMAIL_FROM_NAME", "Kanall"),
+		MonoSecretKey:              os.Getenv("MONO_SECRET_KEY"),
 	}
 
 	if cfg.DatabaseURL == "" {

@@ -131,17 +131,6 @@ Full reference: [kanall-docs.vercel.app](https://kanall-docs.vercel.app)
 | `GET` | `/health` | Health check |
 | `POST` | `/webhooks/nomba` | Inbound Nomba webhook — HMAC verified, always returns 200 |
 
-### Dashboard session (`kanall_session` cookie)
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/auth/me` | Current tenant profile |
-| `POST` | `/auth/rotate-key` | Rotate API key |
-| `POST` | `/auth/business-kyc` | Submit business verification |
-| `POST` | `/auth/webhook-url` | Set tenant-level webhook delivery URL |
-| `POST` | `/auth/webhook-secret` | Reveal or generate outbound signing secret |
-| `GET` | `/auth/misdirected` | Payments that arrived with no matching account |
-
 ### Tenant API (`X-API-Key` header)
 
 | Method | Path | Description |

@@ -236,8 +236,8 @@ export const api = {
     patch: (id: string, body: { name: string }) =>
       request<Customer>('PATCH', `/v1/customers/${id}`, body),
 
-    upgradeKYC: (id: string, nin: string, ninDocument: string) =>
-      request<Customer>('POST', `/v1/customers/${id}/kyc`, { nin, nin_document: ninDocument }),
+    upgradeKYC: (id: string, nin: string) =>
+      request<Customer>('POST', `/v1/customers/${id}/kyc`, { nin }),
 
     approveKYC: (id: string) =>
       request<Customer>('POST', `/auth/customers/${id}/kyc/approve`),

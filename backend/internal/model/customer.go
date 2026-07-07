@@ -11,13 +11,13 @@ type Customer struct {
 	TenantID             uuid.UUID
 	ExternalRef          string
 	Name                 string
-	BVNEncrypted         *string
-	BVNLast4             *string
-	NINEncrypted         *string
-	NINDocumentEncrypted *string
-	NINLast4             *string
-	KYCTier              int
-	KYCStatus            string
+	BVNEncrypted    *string
+	BVNLast4        *string
+	NINEncrypted    *string
+	NINLast4        *string
+	VerificationRef *string
+	KYCTier         int
+	KYCStatus       string
 	Status               string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time

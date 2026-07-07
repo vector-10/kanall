@@ -33,7 +33,7 @@ func NewRouter(
 
 	webhookH := &WebhookHandler{reconciliation: reconciliationSvc, store: store}
 	accountH := &AccountHandler{provisioning: provisioningSvc, lifecycle: lifecycleSvc, store: store}
-	customerH := &CustomerHandler{store: store, encryptionKey: cfg.EncryptionKey}
+	customerH := &CustomerHandler{store: store, encryptionKey: cfg.EncryptionKey, identity: provider.NewMonoIdentityProvider(cfg.MonoSecretKey)}
 	statementH := &StatementHandler{statement: statementSvc}
 	registrationH := &RegistrationHandler{registration: registrationSvc}
 	authH := &AuthHandler{auth: authSvc, verification: verificationSvc, store: store, env: cfg.Env, encryptionKey: cfg.EncryptionKey}

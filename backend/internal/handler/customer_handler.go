@@ -12,17 +12,18 @@ import (
 	"github.com/vector-10/kanall/internal/apierror"
 	"github.com/vector-10/kanall/internal/crypto"
 	"github.com/vector-10/kanall/internal/middleware"
+	"github.com/vector-10/kanall/internal/provider"
 	"github.com/vector-10/kanall/internal/repository"
 )
 
 type CustomerHandler struct {
 	store         *repository.Store
 	encryptionKey string
+	identity      provider.IdentityProvider
 }
 
 type kycUpgradeRequest struct {
-	NIN         string `json:"nin"`
-	NINDocument string `json:"nin_document"` 
+	NIN string `json:"nin"`
 }
 
 type customerPatchRequest struct {
@@ -151,12 +152,8 @@ func (h *CustomerHandler) UpgradeKYC(w http.ResponseWriter, r *http.Request) {
 		apierror.Respond(w, apierror.BadRequest("invalid request body"))
 		return
 	}
-	if len(req.NIN) < 11 {
-		apierror.Respond(w, apierror.BadRequest("nin must be 11 digits"))
-		return
-	}
-	if req.NINDocument == "" {
-		apierror.Respond(w, apierror.BadRequest("nin_document is required"))
+	if len(req.NIN) != 11 {
+		apierror.Respond(w, apierror.BadRequest("nin must be exactly 11 digits"))
 		return
 	}
 
@@ -174,7 +171,6 @@ func (h *CustomerHandler) UpgradeKYC(w http.ResponseWriter, r *http.Request) {
 		apierror.Respond(w, apierror.BadRequest("kyc submission already pending review"))
 		return
 	}
-
 	if customer.KYCTier >= 2 {
 		apierror.Respond(w, apierror.BadRequest("customer is already at tier 2 or above"))
 		return
@@ -185,21 +181,28 @@ func (h *CustomerHandler) UpgradeKYC(w http.ResponseWriter, r *http.Request) {
 		internalError(w, r, err)
 		return
 	}
-
-	encryptedDoc, err := crypto.Encrypt(req.NINDocument, h.encryptionKey)
-	if err != nil {
-		internalError(w, r, err)
-		return
-	}
 	ninLast4 := req.NIN[len(req.NIN)-4:]
 
-	if err := h.store.Customers.UpdateKYC(r.Context(), tenant.ID, customerID, encryptedNIN, ninLast4, encryptedDoc); err != nil {
+	kycStatus := "pending_review"
+	var verificationRef *string
+
+	verification, err := h.identity.VerifyNIN(r.Context(), req.NIN)
+	if err == nil {
+		kycStatus = "approved"
+		verificationRef = &verification.Ref
+	}
+
+	if err := h.store.Customers.UpdateKYC(r.Context(), tenant.ID, customerID, encryptedNIN, ninLast4, kycStatus, verificationRef); err != nil {
 		internalError(w, r, err)
 		return
 	}
 
 	customer.NINLast4 = &ninLast4
-	customer.KYCStatus = "pending_review"
+	customer.KYCStatus = kycStatus
+	customer.VerificationRef = verificationRef
+	if kycStatus == "approved" {
+		customer.KYCTier = 2
+	}
 
 	apierror.WriteJSON(w, http.StatusOK, customer)
 }
