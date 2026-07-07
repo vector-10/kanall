@@ -34,7 +34,7 @@ func TenantAuth(store *repository.Store) func(http.Handler) http.Handler {
 				}
 			}
 
-			// 2. X-API-Key header (server-to-server)
+			
 			apiKey := r.Header.Get("X-API-Key")
 			if apiKey == "" {
 				apierror.Respond(w, apierror.Unauthorized())

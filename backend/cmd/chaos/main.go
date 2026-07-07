@@ -407,7 +407,7 @@ func main() {
 
 	cfg := appConfig{
 		serverURL:  getEnv("SERVER_URL", "http://localhost:8080"),
-		secret:     getEnv("NOMBA_WEBHOOK_SIGNING_SECRET", ""),
+		secret:     getEnv("NOMBA_WEBHOOKS_SIGNING_SECRET", ""),
 		accountRef: getEnv("CHAOS_ACCOUNT_REF", ""),
 		apiKey:     getEnv("API_KEY", ""),
 		workers:    getEnvInt("CHAOS_WORKERS", 10),
@@ -416,7 +416,7 @@ func main() {
 	}
 
 	if cfg.secret == "" {
-		log.Fatal("NOMBA_WEBHOOK_SIGNING_SECRET is required")
+		log.Fatal("NOMBA_WEBHOOKS_SIGNING_SECRET is required")
 	}
 
 	if cfg.accountRef == "" {
