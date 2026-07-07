@@ -1,113 +1,81 @@
-# kanall
+# Kanall
 
-kanall is a multi-tenant, domain-blind backend infrastructure primitive for dedicated virtual accounts, built on Nomba's production APIs.
+Virtual account infrastructure for multi-tenant platforms. Give every entity in your system — a driver, a distributor, a merchant — a dedicated Nigerian bank account (NUBAN), and let Kanall handle the attribution, reconciliation, and ledger.
 
-It is a **system of record, not a custodian**. Nomba holds the funds. kanall holds the attribution, the ledger, and the reconciliation. Any business — a logistics company, a savings platform, a freelance marketplace — can use kanall to provision virtual accounts for their users without building payment infrastructure from scratch.
-
-Built for the **Nomba x DevCareer Hackathon 2026, Infrastructure Track** by **Team Prótos**.
+**[Dashboard](https://kanall.vercel.app) · [API](https://kanall.onrender.com/health) · [Docs](https://kanall-docs.vercel.app)**
 
 ---
 
 ## What it does
 
-- **Provision real NUBANs** for customers under any tenant via Nomba's virtual accounts API, with full isolation between tenants
-- **Record every inbound payment** as a true double-entry ledger event — two rows, same `transaction_group_id`, always sum to zero
-- **Idempotency gate** — the `processed_events` INSERT happens in the same DB transaction as the ledger write; a duplicate `requestId` returns 200 and posts nothing
-- **Convergence sweep** — a background goroutine re-queries Nomba's Transactions API, promoting provisional entries to confirmed or posting reversal groups when Nomba does not confirm them
-- **Outbound delivery** — tenant callback URLs dispatched from a transactional outbox with exponential backoff and dead-letter visibility
-- **Dashboard** — a React + Tailwind frontend for account management, statement viewing, and webhook dead-letter monitoring
+- **Dedicated NUBANs per entity** — provision real Nigerian bank accounts via Nomba's production APIs, fully isolated per tenant
+- **True double-entry ledger** — every payment posts two rows (credit + debit) sharing a `transaction_group_id`; entries are append-only and always sum to zero
+- **Idempotent ingestion** — the `processed_events` gate and the ledger write happen in one database transaction; duplicate webhooks are silently ignored
+- **Confirmation pipeline** — fast-path single-transaction query (seconds) + background bulk sweep (minutes) + aged auditor (24h); no payment goes unresolved
+- **Outbound delivery** — payment events dispatched to your configured webhook URL with exponential backoff, dead-letter visibility, and HMAC-SHA256 signing
+- **Settlement** — initiate outbound bank transfers from virtual account balances, with idempotent retry and automatic reversal on failure
+- **Dashboard** — React frontend for account management, statement viewing, KYC submission, and webhook monitoring
 
 ---
 
-## Architecture
+## Get started
 
-The layering is strict: handlers call services, services call repositories, repositories call the database. Nothing skips a layer.
+Sign up at **[kanall.vercel.app](https://kanall.vercel.app)**, verify your email, and copy your API key. Then:
 
+```bash
+# Set your webhook URL once — all accounts deliver here
+curl -X POST https://kanall.onrender.com/auth/webhook-url \
+  -H "X-API-Key: ten_sk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://your-backend.com/webhooks/kanall"}'
+
+# Provision a virtual account
+curl -X POST https://kanall.onrender.com/v1/accounts \
+  -H "X-API-Key: ten_sk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"externalRef": "user-001", "name": "Emeka Okafor"}'
+
+# Check the ledger
+curl https://kanall.onrender.com/v1/accounts/user-001/statement \
+  -H "X-API-Key: ten_sk_..."
 ```
-cmd/server/main.go     entrypoint: config → pgxpool → chi router → listen
-internal/config/       env loading (godotenv), typed Config struct
-internal/model/        plain Go structs mirroring DB tables, no methods
-internal/repository/   all SQL — one file per table, receives pgxpool.Pool
-internal/service/      business logic — orchestrates repos + provider
-internal/handler/      HTTP handlers + route registration (chi)
-internal/middleware/   tenant auth (API key), rate limiting, request-id, logging, CORS
-internal/provider/     VirtualAccountProvider interface + NombaProvider
-```
+
+Full integration guide: [kanall-docs.vercel.app](https://kanall-docs.vercel.app)
 
 ---
 
-## Key design decisions
-
-**True double-entry ledger** — every inbound payment creates exactly two ledger rows sharing a `transaction_group_id`: a credit to the virtual account and a debit to the tenant settlement account. Entries are append-only; corrections post new reversal groups, never mutate existing rows.
-
-**Idempotency** — the `processed_events` table (keyed on `requestId` from the Nomba webhook payload) is inserted in the same database transaction as the ledger write. Zero rows affected means already processed — return 200 immediately without re-posting entries.
-
-**Truth hierarchy** — webhooks are hints. kanall verifies them, posts provisional entries, and trusts them enough to notify tenants. The convergence sweep re-queries Nomba and is the only process that promotes entries from `provisional` to `confirmed`.
-
-**Webhook verification** — Nomba's signature is not a raw body hash. The signed string is a 9-field colon-separated value: `{event_type}:{requestId}:{merchant.userId}:{merchant.walletId}:{transactionId}:{type}:{time}:{responseCode}:{nomba-timestamp}`. HMAC-SHA256, base64-encoded output. Always returns 200 to Nomba — failures are dead-lettered internally.
-
-**Domain-blind core** — no vertical-specific nouns anywhere in the schema or logic.
-
----
-
-## Chaos harness output
-
-```
-Kanall Chaos Harness
-server=http://localhost:8080  workers=10  requests=50
-
-─── 1. Webhook Flood ───
-PASS  flood: 50 requests in 0.20s → 249 RPS
-PASS  flood: all 50 returned 200 (no panics, no drops)
-
-─── 2. Idempotency Storm ───
-PASS  idempotency: 10 concurrent dupes all returned 200 (server always ACKs — never 4xx on dup)
-PASS  idempotency: statement has 0 credit line(s) total — verify manually that requestId 604d7cdf appears exactly once
-
-─── 3. Invalid Signature ───
-PASS  invalid-sig: server returned 200 (correctly dead-letters, does not reject at HTTP level)
-
-─── 4. Provisioning Race ───
-PASS  provision-race: all 10 concurrent requests returned 200/201
-PASS  provision-race: all 10 goroutines received identical accountRef fb07b9b4-6520-4133-bf88-9a8db4f28970 (race handled correctly)
-
-════════════════════════════
-  7 passed   0 failed
-```
-
----
-
-## Getting started
+## Running locally
 
 ### Prerequisites
 
 - Go 1.22+
-- Docker (for PostgreSQL only)
+- Docker (PostgreSQL only — the Go server runs natively)
 - [golang-migrate CLI](https://github.com/golang-migrate/migrate)
-- [Air](https://github.com/air-verse/air) (optional, for live reload)
-- Node 18+ (for the frontend)
+- [Air](https://github.com/air-verse/air) for live reload
+- Node 18+ (frontend)
 
-### Backend setup
+### Backend
 
 ```bash
 cd backend
 
-# 1. Start PostgreSQL
+# Start PostgreSQL
 docker compose up -d
 
-# 2. Fill environment variables
-cp .env.example .env   # then edit .env
+# Copy and fill environment variables
+cp .env.example .env
 
-# 3. Apply migrations
+# Apply migrations
 migrate -path db/migrations -database "$DATABASE_URL" up
 
-# 4. Run the server
+# Start with live reload
 air
-# or without live reload:
+
+# Or without
 go run ./cmd/server
 ```
 
-### Frontend setup
+### Frontend
 
 ```bash
 cd frontend
@@ -119,95 +87,97 @@ npm run dev
 
 ## Environment variables
 
-All defined in `backend/.env`. Required:
+All defined in `backend/.env`.
+
+**Required:**
 
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `NOMBA_BASE_URL` | `https://api.nomba.com` |
-| `NOMBA_ACCOUNT_ID` | Parent account ID |
-| `NOMBA_SUB_ACCOUNT_ID` | Sub-account ID |
+| `NOMBA_ACCOUNT_ID` | Nomba parent account ID |
+| `NOMBA_SUB_ACCOUNT_ID` | Nomba sub-account ID |
 | `NOMBA_CLIENT_ID` | OAuth client ID |
 | `NOMBA_CLIENT_SECRET` | OAuth client secret |
-| `NOMBA_WEBHOOK_SIGNING_SECRET` | Secret for verifying inbound webhook signatures |
+| `NOMBA_WEBHOOKS_SIGNING_SECRET` | HMAC secret for verifying inbound Nomba webhooks |
 | `ENCRYPTION_KEY` | 32 bytes as 64 hex chars — `openssl rand -hex 32` |
+| `RESEND_API_KEY` | Resend API key for transactional email (OTP delivery) |
 
-Optional:
+**Optional:**
 
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `8080` | Server port |
-| `ENV` | `development` | Environment name |
+| `ENV` | `development` | Set to `production` for production cookie behaviour |
 | `FRONTEND_ORIGIN` | `http://localhost:5173` | CORS allowed origin |
-| `CONVERGENCE_SWEEP_INTERVAL_SECONDS` | `60` | How often the sweep runs |
+| `CONVERGENCE_SWEEP_INTERVAL_SECONDS` | `60` | How often the background confirmation sweep runs |
+| `OUTBOX_HTTP_TIMEOUT_SECONDS` | `10` | Timeout for outbound webhook delivery attempts |
+| `EMAIL_FROM` | `noreply@kanall.app` | Sender address for OTP emails |
 
 ---
 
 ## API
 
-### Auth
-
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/register` | Register a new tenant. Returns `tenantId`. |
-| `POST` | `/auth/verify-email` | Submit OTP. Returns `apiKey` (shown once) and sets session cookie. |
-| `POST` | `/auth/login` | Email + password login. Sets session cookie. |
-| `POST` | `/auth/logout` | Invalidates session cookie. |
-| `GET` | `/auth/me` | Returns the authenticated tenant. |
-| `POST` | `/auth/rotate-key` | Rotate API key. Returns new key once. |
+Full reference: [kanall-docs.vercel.app](https://kanall-docs.vercel.app)
 
 ### Public
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/webhooks/nomba` | Nomba endpoint verification ping. Returns 200. |
-| `POST` | `/webhooks/nomba` | Inbound payment webhook. Verified by HMAC-SHA256. Always returns 200. |
-| `GET` | `/health` | Health check with database connectivity status. |
+| `POST` | `/register` | Register a new tenant |
+| `POST` | `/auth/verify-email` | Submit OTP — returns API key (shown once) |
+| `POST` | `/auth/login` | Email + password login (dashboard session) |
+| `POST` | `/auth/logout` | Invalidate session |
+| `GET` | `/health` | Health check |
+| `POST` | `/webhooks/nomba` | Inbound Nomba webhook — HMAC verified, always returns 200 |
 
-### Tenant API (requires `X-API-Key` header)
+### Dashboard session (`kanall_session` cookie)
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/v1/accounts` | Provision a virtual account. Idempotent on `externalRef`. |
-| `GET` | `/v1/accounts` | List all virtual accounts. Cursor-paginated. |
-| `GET` | `/v1/accounts/:accountRef` | Fetch a virtual account. |
-| `PATCH` | `/v1/accounts/:accountRef` | Update `callbackUrl` or `expectedAmount`. |
-| `POST` | `/v1/accounts/:accountRef/expire` | Expire a virtual account. Calls Nomba's expire API. |
-| `GET` | `/v1/accounts/:accountRef/statement` | Paginated ledger statement with running balances. |
-| `GET` | `/v1/customers` | List all customers. |
-| `GET` | `/v1/customers/:id` | Fetch a customer. |
-| `GET` | `/v1/webhooks/dead-letters` | List failed inbound webhook events. |
+| `GET` | `/auth/me` | Current tenant profile |
+| `POST` | `/auth/rotate-key` | Rotate API key |
+| `POST` | `/auth/business-kyc` | Submit business verification |
+| `POST` | `/auth/webhook-url` | Set tenant-level webhook delivery URL |
+| `POST` | `/auth/webhook-secret` | Reveal or generate outbound signing secret |
+| `GET` | `/auth/misdirected` | Payments that arrived with no matching account |
 
-Rate limits are per route group: 5/min for registration, 10/min for login, 20/min for account writes, 100/min for reads.
+### Tenant API (`X-API-Key` header)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/v1/balance` | Aggregate balance across all accounts |
+| `POST` | `/v1/accounts` | Provision a virtual account |
+| `GET` | `/v1/accounts` | List accounts (cursor-paginated) |
+| `GET` | `/v1/accounts/:ref` | Get a single account |
+| `PATCH` | `/v1/accounts/:ref` | Update name, callbackUrl, or expectedAmount |
+| `POST` | `/v1/accounts/:ref/expire` | Permanently close an account |
+| `GET` | `/v1/accounts/:ref/balance` | Account ledger balance |
+| `GET` | `/v1/accounts/:ref/statement` | Paginated ledger statement with running balances |
+| `GET` | `/v1/accounts/:ref/history` | Account status transition log |
+| `POST` | `/v1/accounts/:ref/settle` | Initiate an outbound bank transfer |
+| `GET` | `/v1/customers` | List customers |
+| `GET` | `/v1/customers/:id` | Get a customer |
+| `PATCH` | `/v1/customers/:id` | Update customer details |
+| `POST` | `/v1/customers/:id/kyc` | Submit KYC documents for Tier 2 upgrade |
+| `GET` | `/v1/transfers/banks` | List supported Nigerian banks |
+| `POST` | `/v1/transfers/lookup` | Resolve a bank account number to a name |
+| `GET` | `/v1/transfers/:merchantTxRef` | Get transfer status |
+| `GET` | `/v1/fees/calculate` | Calculate the gross amount needed to receive a net amount |
+| `GET` | `/v1/webhooks/dead-letters` | Outbound deliveries that exhausted all retries |
+| `GET` | `/v1/webhooks/needs-review` | Ledger entries flagged for manual review |
 
 ---
 
-## Development
+## Stack
 
-```bash
-cd backend
+**Backend:** Go 1.22 · chi · pgx v5 · shopspring/decimal · golang-migrate · Air
 
-# Live reload
-air
+**Frontend:** React 18 · TypeScript · Vite · TanStack Query
 
-# Build
-go build -o ./tmp/server ./cmd/server
+**Infrastructure:** PostgreSQL · Render (API) · Vercel (frontend + docs) · Resend (email)
 
-# Tidy dependencies
-go mod tidy
-
-# Apply migrations
-migrate -path db/migrations -database "$DATABASE_URL" up
-
-# Roll back last migration
-migrate -path db/migrations -database "$DATABASE_URL" down 1
-
-# Run chaos harness
-NOMBA_WEBHOOK_SIGNING_SECRET=<secret> \
-CHAOS_ACCOUNT_REF=<accountRef> \
-API_KEY=<tenantApiKey> \
-go run ./cmd/chaos/main.go
-```
+**Docs:** Docusaurus v3
 
 ---
 
@@ -215,29 +185,27 @@ go run ./cmd/chaos/main.go
 
 ```
 backend/
-├── cmd/
-│   ├── server/        # Entrypoint
-│   └── chaos/         # Webhook stress + idempotency harness
+├── cmd/server/        # Entrypoint
 ├── db/migrations/     # SQL migrations (golang-migrate)
 └── internal/
-    ├── config/        # Environment loading and startup validation
-    ├── crypto/        # AES-GCM encryption, API key hashing, session tokens
-    ├── handler/       # chi HTTP handlers and router
-    ├── middleware/    # TenantAuth, rate limiting, logging, request ID, CORS
-    ├── model/         # Plain Go structs mirroring DB tables
+    ├── config/        # Environment loading
+    ├── crypto/        # AES-GCM encryption, key hashing, session tokens
+    ├── handler/       # HTTP handlers and chi router
+    ├── middleware/     # TenantAuth, rate limiting, logging, CORS
+    ├── model/         # Go structs mirroring DB tables
     ├── provider/      # VirtualAccountProvider interface + NombaProvider
     ├── repository/    # All SQL — one file per table
-    └── service/       # Business logic — orchestrates repos and provider
+    └── service/       # Business logic, convergence sweep, outbox worker
 
 frontend/
 └── src/
-    ├── pages/         # AccountsPage, StatementPage, DeadLettersPage, SettingsPage, …
-    ├── components/    # Layout, StatusBadge, AuthShell
+    ├── pages/         # AccountsPage, StatementPage, SettingsPage, …
+    ├── components/    # Layout, AuthShell, StatusBadge
     └── api.ts         # Typed API client
 ```
 
 ---
 
-## License
+Built for the **Nomba × DevCareer Hackathon 2026 — Infrastructure Track** by **Team Prótos**.
 
-MIT
+MIT License
