@@ -147,6 +147,26 @@ export default function Layout({ children, onLogout }: Props) {
 
       {/* Main */}
       <main style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
+        {me && !me.webhookUrl && (
+          <div style={{
+            background: 'rgba(220,38,38,0.08)',
+            borderBottom: '1px solid rgba(220,38,38,0.2)',
+            padding: '10px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <span style={{ ...MONO, fontSize: 11, letterSpacing: '0.1em', color: 'var(--red)' }}>
+              NO WEBHOOK URL CONFIGURED — payment notifications will not be delivered to your system.
+            </span>
+            <a
+              href="/settings"
+              style={{ ...MONO, fontSize: 11, letterSpacing: '0.1em', color: 'var(--red)', textDecoration: 'underline', whiteSpace: 'nowrap', marginLeft: 24 }}
+            >
+              CONFIGURE NOW →
+            </a>
+          </div>
+        )}
         {children}
       </main>
     </div>
