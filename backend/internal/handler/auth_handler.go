@@ -311,6 +311,10 @@ func (h *AuthHandler) RejectCustomerKYC(w http.ResponseWriter, r *http.Request) 
 
 
 func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, rawToken string) {
+	sameSite := http.SameSiteLaxMode
+	if h.env == "production" {
+		sameSite = http.SameSiteNoneMode
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "kanall_session",
 		Value:    rawToken,
@@ -318,11 +322,15 @@ func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, rawToken string) {
 		MaxAge:   7 * 24 * 60 * 60,
 		HttpOnly: true,
 		Secure:   h.env == "production",
-		SameSite: http.SameSiteStrictMode,
+		SameSite: sameSite,
 	})
 }
 
 func (h *AuthHandler) clearSessionCookie(w http.ResponseWriter) {
+	sameSite := http.SameSiteLaxMode
+	if h.env == "production" {
+		sameSite = http.SameSiteNoneMode
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "kanall_session",
 		Value:    "",
@@ -331,6 +339,6 @@ func (h *AuthHandler) clearSessionCookie(w http.ResponseWriter) {
 		Expires:  time.Unix(0, 0),
 		HttpOnly: true,
 		Secure:   h.env == "production",
-		SameSite: http.SameSiteStrictMode,
+		SameSite: sameSite,
 	})
 }
