@@ -201,7 +201,7 @@ export default function RegisterPage({ onRegister }: Props) {
       <form onSubmit={e => { e.preventDefault(); submitRegister() }} className="space-y-4">
         <div>
           <label style={LABEL}>ORGANISATION NAME</label>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Acme Corp" required className="auth-input" />
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Reindeer Logistics" required className="auth-input" />
         </div>
 
         <div>

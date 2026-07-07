@@ -192,7 +192,7 @@ export default function LandingPage({ isAuthed }: Props) {
                 <span style={{ color: "#3A3A3A" }}>{"HTTP/1.1 201 Created\n\n"}</span>
                 {"{\n"}
                 {'  "AccountRef": '}
-                <span style={{ color: "#FFCD32" }}>"acme-001"</span>
+                <span style={{ color: "#FFCD32" }}>"reindeer-001"</span>
                 {",\n"}
                 {'  "BankAccountNumber": '}
                 <span style={{ color: "#FFCD32" }}>"8094423205"</span>
