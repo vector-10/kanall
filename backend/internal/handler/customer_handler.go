@@ -139,6 +139,28 @@ func (h *CustomerHandler) Patch(w http.ResponseWriter, r *http.Request) {
 }
 
 
+func (h *CustomerHandler) GetLinkedAccount(w http.ResponseWriter, r *http.Request) {
+	tenant := middleware.GetTenant(r.Context())
+
+	customerID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		apierror.Respond(w, apierror.BadRequest("invalid customer id"))
+		return
+	}
+
+	va, err := h.store.Accounts.GetByCustomerID(r.Context(), tenant.ID, customerID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			apierror.Respond(w, apierror.NotFound("no account linked to this customer"))
+			return
+		}
+		internalError(w, r, err)
+		return
+	}
+
+	apierror.WriteJSON(w, http.StatusOK, va)
+}
+
 func (h *CustomerHandler) UpgradeKYC(w http.ResponseWriter, r *http.Request) {
 	tenant := middleware.GetTenant(r.Context())
 

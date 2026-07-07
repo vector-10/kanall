@@ -98,6 +98,7 @@ func NewRouter(
 
 		r.With(customerRL.ByAPIKey).Get("/customers", customerH.List)
 		r.With(customerRL.ByAPIKey).Get("/customers/{id}", customerH.Get)
+		r.With(customerRL.ByAPIKey).Get("/customers/{id}/account", customerH.GetLinkedAccount)
 		r.With(accountWriteRL.ByAPIKey).Patch("/customers/{id}", customerH.Patch)
 		r.With(accountWriteRL.ByAPIKey).Post("/customers/{id}/kyc", customerH.UpgradeKYC)
 

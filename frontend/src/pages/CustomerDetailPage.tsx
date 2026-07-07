@@ -55,6 +55,13 @@ export default function CustomerDetailPage() {
     enabled: !!id,
   })
 
+  const { data: linkedAccount } = useQuery({
+    queryKey: ['customer-account', id],
+    queryFn: () => api.customers.getAccount(id!),
+    enabled: !!id,
+    retry: false,
+  })
+
   const kycMutation = useMutation({
     mutationFn: (nin: string) => api.customers.upgradeKYC(id!, nin),
     onSuccess: (updated) => {
@@ -217,8 +224,42 @@ export default function CustomerDetailPage() {
           )}
         </div>
 
-        {/* ── Right: limits + admin panel ── */}
+        {/* ── Right: linked account + limits + admin panel ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Linked account card */}
+          {linkedAccount ? (
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '18px 20px' }}>
+              <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-faint)', marginBottom: 14 }}>LINKED ACCOUNT</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div>
+                  <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 3 }}>NUBAN</div>
+                  <div style={{ ...MONO, fontSize: 15, color: 'var(--text)', letterSpacing: '0.06em' }}>{linkedAccount.BankAccountNumber ?? '—'}</div>
+                </div>
+                <div>
+                  <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 3 }}>ACCOUNT NAME</div>
+                  <div style={{ ...MONO, fontSize: 12, color: 'var(--text-muted)' }}>{linkedAccount.BankAccountName ?? '—'}</div>
+                </div>
+                <div>
+                  <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 3 }}>REF</div>
+                  <div style={{ ...MONO, fontSize: 11, color: 'var(--text-faint)', letterSpacing: '0.04em' }}>{linkedAccount.AccountRef}</div>
+                </div>
+              </div>
+              <Link
+                to={`/accounts/${linkedAccount.AccountRef}`}
+                style={{ ...MONO, display: 'block', marginTop: 16, fontSize: 11, letterSpacing: '0.12em', color: 'var(--accent)', textDecoration: 'none' }}
+                onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline' }}
+                onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none' }}
+              >
+                VIEW STATEMENT →
+              </Link>
+            </div>
+          ) : (
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '18px 20px' }}>
+              <div style={{ ...MONO, fontSize: 10, letterSpacing: '0.14em', color: 'var(--text-faint)', marginBottom: 8 }}>LINKED ACCOUNT</div>
+              <div style={{ ...MONO, fontSize: 12, color: 'var(--text-faint)' }}>No account provisioned</div>
+            </div>
+          )}
 
           {/* Limits card */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '18px 20px' }}>

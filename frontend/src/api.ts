@@ -244,6 +244,8 @@ export const api = {
 
     rejectKYC: (id: string) =>
       request<Customer>('POST', `/auth/customers/${id}/kyc/reject`),
+
+    getAccount: (id: string) => request<Account>('GET', `/v1/customers/${id}/account`),
   },
 
   webhooks: {
