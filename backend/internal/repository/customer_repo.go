@@ -123,10 +123,10 @@ func (r *CustomerRepo) UpdateKYC(ctx context.Context, tenantID, customerID uuid.
 		    nin_last4     = $2,
 		    kyc_status    = $3,
 		    verification_ref = $4,
-		    kyc_tier      = CASE WHEN $3 = 'approved' THEN 2 ELSE kyc_tier END,
+		    kyc_tier      = CASE WHEN $5 = 'approved' THEN 2 ELSE kyc_tier END,
 		    updated_at    = now()
-		WHERE tenant_id = $5 AND id = $6
-	`, ninEncrypted, ninLast4, kycStatus, verificationRef, tenantID, customerID)
+		WHERE tenant_id = $6 AND id = $7
+	`, ninEncrypted, ninLast4, kycStatus, verificationRef, kycStatus, tenantID, customerID)
 	return err
 }
 
