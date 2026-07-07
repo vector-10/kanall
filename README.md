@@ -14,7 +14,9 @@ Virtual account infrastructure for multi-tenant platforms. Give every entity in 
 - **Confirmation pipeline** — fast-path single-transaction query (seconds) + background bulk sweep (minutes) + aged auditor (24h); no payment goes unresolved
 - **Outbound delivery** — payment events dispatched to your configured webhook URL with exponential backoff, dead-letter visibility, and HMAC-SHA256 signing
 - **Settlement** — initiate outbound bank transfers from virtual account balances, with idempotent retry and automatic reversal on failure
-- **Dashboard** — React frontend for account management, statement viewing, KYC submission, and webhook monitoring
+- **Customer KYC pipeline** — three-tier CBN KYC per customer record; Tier 1 auto-collected at provisioning (BVN), Tier 2 via NIN verified through Mono Identity, Tier 3 escalates to manual review; Kanall reports tier, tenants enforce product limits, Nomba enforces banking limits
+- **Customer-linked accounts** — each customer has one dedicated virtual account; the customer detail endpoint exposes NUBAN, account name, and statement access in one call
+- **Dashboard** — React frontend for account management, statement viewing, per-customer linked account and KYC, settlement, and webhook monitoring
 
 ---
 
@@ -113,6 +115,7 @@ All defined in `backend/.env`.
 | `CONVERGENCE_SWEEP_INTERVAL_SECONDS` | `60` | How often the background confirmation sweep runs |
 | `OUTBOX_HTTP_TIMEOUT_SECONDS` | `10` | Timeout for outbound webhook delivery attempts |
 | `EMAIL_FROM` | `noreply@kanall.app` | Sender address for OTP emails |
+| `MONO_SECRET_KEY` | — | Mono Identity API key for automated Tier 2 NIN verification; without it, submissions go to `pending_review` for admin approval |
 
 ---
 
@@ -147,8 +150,9 @@ Full reference: [kanall-docs.vercel.app](https://kanall-docs.vercel.app)
 | `POST` | `/v1/accounts/:ref/settle` | Initiate an outbound bank transfer |
 | `GET` | `/v1/customers` | List customers |
 | `GET` | `/v1/customers/:id` | Get a customer |
+| `GET` | `/v1/customers/:id/account` | Get the virtual account linked to a customer |
 | `PATCH` | `/v1/customers/:id` | Update customer details |
-| `POST` | `/v1/customers/:id/kyc` | Submit KYC documents for Tier 2 upgrade |
+| `POST` | `/v1/customers/:id/kyc` | Submit NIN for Tier 2 upgrade (auto-verified via Mono, falls back to pending_review) |
 | `GET` | `/v1/transfers/banks` | List supported Nigerian banks |
 | `POST` | `/v1/transfers/lookup` | Resolve a bank account number to a name |
 | `GET` | `/v1/transfers/:merchantTxRef` | Get transfer status |
