@@ -59,7 +59,7 @@ export default function RegisterPage({ onRegister }: Props) {
 
   const verifyMutation = useMutation<{ apiKey: string }, Error>({
     mutationFn: () => api.verifyEmail(tenantId, otp),
-    onSuccess: (data) => { setApiKey(data.apiKey); setStep('done'); onRegister() },
+    onSuccess: (data) => { setApiKey(data.apiKey); setStep('done') },
   })
 
   const validate = (): boolean => {
