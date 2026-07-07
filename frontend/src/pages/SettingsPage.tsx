@@ -37,6 +37,9 @@ export default function SettingsPage() {
   const [webhookSecretVisible, setWebhookSecretVisible] = useState<string | null>(null)
   const [webhookCopied, setWebhookCopied] = useState(false)
 
+  const [webhookUrlInput, setWebhookUrlInput] = useState('')
+  const [editingWebhookUrl, setEditingWebhookUrl] = useState(false)
+
   const [businessType, setBusinessType] = useState('')
   const [cacNumber, setCACNumber] = useState('')
 
@@ -63,6 +66,15 @@ export default function SettingsPage() {
   const webhookSecretMutation = useMutation({
     mutationFn: api.auth.webhookSecret,
     onSuccess: (data) => { setWebhookSecretVisible(data.webhookSecret) },
+  })
+
+  const webhookUrlMutation = useMutation({
+    mutationFn: (url: string) => api.auth.setWebhookUrl(url),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      setEditingWebhookUrl(false)
+      setWebhookUrlInput('')
+    },
   })
 
   const copy = () => {
@@ -94,8 +106,58 @@ export default function SettingsPage() {
       {/* Two-column grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
 
-        {/* ── Left column: API Key + Webhook Secret ── */}
+        {/* ── Left column: Webhook URL + API Key + Webhook Secret ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Webhook URL */}
+          <Card title="WEBHOOK URL">
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
+              All payment notifications are delivered here. Set this once — every virtual account you provision will use it automatically.
+            </p>
+            {me?.webhookUrl && !editingWebhookUrl ? (
+              <div>
+                <div style={{ ...MONO, fontSize: 12, color: 'var(--accent)', background: 'var(--surface-raised)', border: '1px solid var(--border)', padding: '10px 14px', wordBreak: 'break-all', letterSpacing: '0.02em', marginBottom: 12 }}>
+                  {me.webhookUrl}
+                </div>
+                <button
+                  onClick={() => { setEditingWebhookUrl(true); setWebhookUrlInput(me.webhookUrl ?? '') }}
+                  style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '8px 16px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer' }}
+                >
+                  UPDATE
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <input
+                  type="url"
+                  value={webhookUrlInput}
+                  onChange={e => setWebhookUrlInput(e.target.value)}
+                  placeholder="https://your-backend.com/webhooks/kanall"
+                  style={inputStyle}
+                />
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    onClick={() => webhookUrlMutation.mutate(webhookUrlInput)}
+                    disabled={webhookUrlMutation.isPending || !webhookUrlInput}
+                    style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '9px 18px', background: 'var(--accent)', color: 'var(--accent-fg)', border: 'none', cursor: 'pointer', opacity: (webhookUrlMutation.isPending || !webhookUrlInput) ? 0.5 : 1 }}
+                  >
+                    {webhookUrlMutation.isPending ? 'SAVING...' : 'SAVE'}
+                  </button>
+                  {editingWebhookUrl && (
+                    <button
+                      onClick={() => { setEditingWebhookUrl(false); setWebhookUrlInput('') }}
+                      style={{ ...MONO, fontSize: 11, letterSpacing: '0.12em', padding: '9px 16px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer' }}
+                    >
+                      CANCEL
+                    </button>
+                  )}
+                </div>
+                {webhookUrlMutation.error && (
+                  <p style={{ ...MONO, fontSize: 12, color: 'var(--red)', letterSpacing: '0.06em' }}>{webhookUrlMutation.error.message}</p>
+                )}
+              </div>
+            )}
+          </Card>
 
           {/* API Key */}
           <Card title="API KEY">

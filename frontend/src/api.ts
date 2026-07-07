@@ -30,6 +30,7 @@ export interface Tenant {
   apiKeySuffix: string | null
   kycStatus: string
   businessType: string | null
+  webhookUrl: string | null
   createdAt: string
 }
 
@@ -179,6 +180,9 @@ export const api = {
 
     webhookSecret: () =>
       request<{ webhookSecret: string }>('POST', '/auth/webhook-secret'),
+
+    setWebhookUrl: (url: string) =>
+      request<{ webhookUrl: string }>('POST', '/auth/webhook-url', { url }),
   },
 
   accounts: {
