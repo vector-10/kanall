@@ -186,6 +186,12 @@ Full reference: [kanall-docs.vercel.app](https://kanall-docs.vercel.app)
 
 ---
 
+## Database schema
+
+![Kanall ERD](./kanall-erd.png)
+
+---
+
 ## Project structure
 
 ```
