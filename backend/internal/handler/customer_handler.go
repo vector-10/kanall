@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -190,6 +191,8 @@ func (h *CustomerHandler) UpgradeKYC(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		kycStatus = "approved"
 		verificationRef = &verification.Ref
+	} else {
+		log.Printf("mono NIN verification failed for customer %s: %v", customerID, err)
 	}
 
 	if err := h.store.Customers.UpdateKYC(r.Context(), tenant.ID, customerID, encryptedNIN, ninLast4, kycStatus, verificationRef); err != nil {
