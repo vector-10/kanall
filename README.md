@@ -2,7 +2,19 @@
 
 Virtual account infrastructure for multi-tenant platforms. Give every entity in your system — a driver, a distributor, a merchant — a dedicated Nigerian bank account (NUBAN), and let Kanall handle the attribution, reconciliation, and ledger.
 
-**[Dashboard](https://kanall.vercel.app) · [API](https://kanall.onrender.com/health) · [Docs](https://kanall-docs.vercel.app)**
+**[Dashboard](https://www.kanall-app.online) · [API](https://kanall.onrender.com/health) · [Docs](https://kanall-docs.vercel.app)**
+
+---
+
+## Demo Access
+
+| | |
+|---|---|
+| **URL** | https://www.kanall-app.online |
+| **Email** | duzieblaise10@gmail.com |
+| **Password** | Duzie.1234 |
+
+Log in to explore the dashboard — accounts, statements, customers, KYC, settlement, and webhook monitoring are all pre-loaded with live data.
 
 ---
 
@@ -22,7 +34,7 @@ Virtual account infrastructure for multi-tenant platforms. Give every entity in 
 
 ## Get started
 
-Sign up at **[kanall.vercel.app](https://kanall.vercel.app)**, verify your email, and copy your API key. Then:
+Sign up at **[www.kanall-app.online](https://www.kanall-app.online)**, verify your email, and copy your API key. Then:
 
 ```bash
 # Set your webhook URL once — all accounts deliver here
