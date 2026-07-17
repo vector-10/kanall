@@ -32,8 +32,7 @@ func NewConfirmationWorker(store *repository.Store, prov provider.VirtualAccount
 	}
 }
 
-// Enqueue pushes a newly-created job onto the fast-path channel.
-// Called by reconciliation immediately after PostDoubleEntry.
+
 func (w *ConfirmationWorker) Enqueue(job model.ConfirmationJob) {
 	select {
 	case w.jobs <- job:

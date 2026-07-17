@@ -5,9 +5,7 @@ import (
 	"strings"
 )
 
-// CORSWithOrigin accepts a comma-separated list of allowed origins.
-// It reflects the request origin back only when it matches, which is
-// required when Access-Control-Allow-Credentials is true.
+
 func CORSWithOrigin(origins string) func(http.Handler) http.Handler {
 	allowed := make(map[string]struct{})
 	for _, o := range strings.Split(origins, ",") {
