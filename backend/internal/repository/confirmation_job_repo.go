@@ -23,9 +23,7 @@ func (r *ConfirmationJobRepo) Create(ctx context.Context, job model.Confirmation
 	return err
 }
 
-// ClaimBatch atomically claims up to limit pending jobs whose retry time has
-// arrived. It leases each row by advancing next_retry_at by 6 minutes so the
-// DB recovery poller does not re-queue in-flight jobs.
+
 func (r *ConfirmationJobRepo) ClaimBatch(ctx context.Context, limit int) ([]model.ConfirmationJob, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
