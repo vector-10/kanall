@@ -86,7 +86,6 @@ func NewRouter(
 		r.Use(middleware.TenantAuth(store))
 
 		r.With(accountReadRL.ByAPIKey).Get("/balance", accountH.TenantBalance)
-
 		r.With(accountWriteRL.ByAPIKey).Post("/accounts", accountH.Provision)
 		r.With(accountReadRL.ByAPIKey).Get("/accounts", accountH.List)
 		r.With(accountReadRL.ByAPIKey).Get("/accounts/{accountRef}", accountH.Get)
@@ -106,7 +105,6 @@ func NewRouter(
 		r.With(accountReadRL.ByAPIKey).Get("/webhooks/needs-review", webhookH.ListNeedsReview)
 
 		r.With(accountReadRL.ByAPIKey).Get("/fees/calculate", feeH.Calculate)
-
 		r.With(accountReadRL.ByAPIKey).Get("/transfers/banks", settlementH.ListBanks)
 		r.With(accountWriteRL.ByAPIKey).Post("/transfers/lookup", settlementH.LookupAccount)
 		r.With(accountReadRL.ByAPIKey).Get("/transfers/{merchantTxRef}", settlementH.GetTransferStatus)
