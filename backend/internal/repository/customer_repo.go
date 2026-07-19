@@ -114,8 +114,7 @@ func (r *CustomerRepo) UpdateName(ctx context.Context, tenantID, customerID uuid
 	return err
 }
 
-// UpdateKYC stores the verified NIN and sets the KYC status. When kycStatus is
-// "approved" the tier is promoted to 2 in the same statement.
+
 func (r *CustomerRepo) UpdateKYC(ctx context.Context, tenantID, customerID uuid.UUID, ninEncrypted, ninLast4, kycStatus string, verificationRef *string) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE customers
