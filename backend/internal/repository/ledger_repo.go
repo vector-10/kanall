@@ -90,9 +90,7 @@ func (r *LedgerRepo) PostSettlementIntent(ctx context.Context, debit, credit mod
 		return err
 	}
 	defer tx.Rollback(ctx)
-
-	// Lock the VA row so concurrent settle calls on the same account serialize.
-	// Then the balance check is safe — no other settlement can post a debit until we commit.
+	
 	if _, err := tx.Exec(ctx, `SELECT id FROM virtual_accounts WHERE id = $1 FOR UPDATE`, debit.AccountID); err != nil {
 		return err
 	}
