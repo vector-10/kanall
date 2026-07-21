@@ -35,7 +35,7 @@ type ProvisionInput struct {
 	CallbackURL    string
 	ExpectedAmount *decimal.Decimal
 	ExpiresAt      *time.Time
-	Mode           string // "dedicated" (default) | "onetime"
+	Mode           string 
 }
 
 func (s *ProvisioningService) Provision(ctx context.Context, input ProvisionInput) (*model.VirtualAccount, error) {
@@ -48,8 +48,7 @@ func (s *ProvisioningService) Provision(ctx context.Context, input ProvisionInpu
 		return nil, err
 	}
 
-	// For dedicated VAs, return the existing VA if the customer already has one.
-	// For onetime VAs, always provision fresh regardless of existing accounts.
+
 	if input.Mode == "dedicated" && !created {
 		va, err := s.store.Accounts.GetByCustomerID(ctx, input.TenantID, customer.ID)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
@@ -60,9 +59,7 @@ func (s *ProvisioningService) Provision(ctx context.Context, input ProvisionInpu
 		}
 	}
 
-	// Use externalRef as the Nomba accountRef for dedicated VAs so tenants can
-	// look up accounts by their own reference on both Nomba and Kanall.
-	// For onetime VAs, append a short suffix so one customer can have multiple.
+
 	accountRef := input.ExternalRef
 	if input.Mode == "onetime" {
 		accountRef = input.ExternalRef + "-" + uuid.New().String()[:8]

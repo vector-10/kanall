@@ -222,8 +222,7 @@ func (r *LedgerRepo) ListByAccount(ctx context.Context, tenantID, accountID uuid
 	return scanEntries(rows)
 }
 
-// SumByAccount returns the all-time total credits and debits for an account.
-// Used to compute the accurate closing balance regardless of pagination.
+
 func (r *LedgerRepo) SumByAccount(ctx context.Context, tenantID, accountID uuid.UUID) (credits, debits decimal.Decimal, err error) {
 	err = r.pool.QueryRow(ctx, `
 		SELECT
@@ -235,10 +234,7 @@ func (r *LedgerRepo) SumByAccount(ctx context.Context, tenantID, accountID uuid.
 	return
 }
 
-// OpeningBalance returns the net balance of all entries up to and including
-// the cursor entry. This is the starting balance for the current page so
-// per-line running balances are accurate across page boundaries.
-// Returns zero when cursorID is nil (first page).
+
 func (r *LedgerRepo) OpeningBalance(ctx context.Context, tenantID, accountID uuid.UUID, cursorID *uuid.UUID) (decimal.Decimal, error) {
 	if cursorID == nil {
 		return decimal.Zero, nil
@@ -258,9 +254,7 @@ func (r *LedgerRepo) OpeningBalance(ctx context.Context, tenantID, accountID uui
 	return balance, err
 }
 
-// ListByAccountPaginated returns up to limit entries that come after the cursor
-// entry (ordered by created_at ASC, id ASC). Pass nil cursorID to start from
-// the beginning. Fetch limit+1 in the caller to detect whether more pages exist.
+
 func (r *LedgerRepo) ListByAccountPaginated(ctx context.Context, tenantID, accountID uuid.UUID, limit int, cursorID *uuid.UUID) ([]model.LedgerEntry, error) {
 	var (
 		rows pgx.Rows

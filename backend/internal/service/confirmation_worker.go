@@ -42,8 +42,7 @@ func (w *ConfirmationWorker) Enqueue(job model.ConfirmationJob) {
 	}
 }
 
-// Start launches numWorkers goroutines consuming the jobs channel, plus a DB
-// recovery poller that re-hydrates the channel after server restarts.
+
 func (w *ConfirmationWorker) Start(ctx context.Context, numWorkers int) {
 	log.Printf("confirmation: starting %d workers", numWorkers)
 	for i := 0; i < numWorkers; i++ {
@@ -107,7 +106,6 @@ func (w *ConfirmationWorker) process(ctx context.Context, job model.Confirmation
 		return
 	}
 
-	// Transaction not yet visible on Nomba's side — schedule retry.
 	w.scheduleRetry(ctx, job, "transaction not yet visible")
 }
 

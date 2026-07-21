@@ -139,8 +139,7 @@ func (s *ConvergenceService) sweep(ctx context.Context) error {
 		}
 	}
 
-	// Layer 4: re-examine needs_review entries using bulk map + targeted requery.
-	// ConfirmByTxnRef now accepts both 'provisional' and 'needs_review' statuses.
+
 	seenNR := make(map[string]bool)
 	for _, e := range needsReview {
 		if seenNR[e.NombaTxnRef] {

@@ -13,9 +13,6 @@ type EmailVerificationRepo struct {
 	pool *pgxpool.Pool
 }
 
-// Create inserts a new OTP record. The unique partial index on tenant_id WHERE
-// verified_at IS NULL enforces only one pending record per tenant at a time —
-// so a re-register or re-send naturally replaces the old pending OTP.
 func (r *EmailVerificationRepo) Create(ctx context.Context, ev *model.EmailVerification) error {
 	return r.pool.QueryRow(ctx, `
 		INSERT INTO email_verifications (id, tenant_id, otp_hash, expires_at)
@@ -26,7 +23,7 @@ func (r *EmailVerificationRepo) Create(ctx context.Context, ev *model.EmailVerif
 	`, ev.ID, ev.TenantID, ev.OTPHash, ev.ExpiresAt).Scan(&ev.CreatedAt)
 }
 
-// GetPending returns the active (unverified, not expired) OTP record for a tenant.
+
 func (r *EmailVerificationRepo) GetPending(ctx context.Context, tenantID uuid.UUID) (*model.EmailVerification, error) {
 	ev := &model.EmailVerification{}
 	err := r.pool.QueryRow(ctx, `
@@ -42,7 +39,7 @@ func (r *EmailVerificationRepo) GetPending(ctx context.Context, tenantID uuid.UU
 	return ev, nil
 }
 
-// MarkVerified stamps verified_at so the record can never be reused.
+
 func (r *EmailVerificationRepo) MarkVerified(ctx context.Context, id uuid.UUID) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE email_verifications SET verified_at = now() WHERE id = $1

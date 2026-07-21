@@ -13,9 +13,7 @@ type SettlementJobRepo struct {
 	pool *pgxpool.Pool
 }
 
-// ClaimBatch atomically claims up to 50 eligible settlement jobs. It leases
-// each row by advancing next_retry_at by 2 minutes so overlapping sweeps
-// cannot pick up the same job (prevents double disbursement).
+
 func (r *SettlementJobRepo) ClaimBatch(ctx context.Context) ([]model.SettlementJob, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {

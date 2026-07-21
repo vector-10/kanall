@@ -23,8 +23,7 @@ func (r *WebhookDeliveryRepo) Create(ctx context.Context, d *model.TenantWebhook
 	return err
 }
 
-// ClaimBatch selects up to limit eligible deliveries and leases them for 30 seconds
-// by advancing next_retry_at, preventing duplicate delivery across sweep ticks.
+
 func (r *WebhookDeliveryRepo) ClaimBatch(ctx context.Context, limit int) ([]model.TenantWebhookDelivery, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
